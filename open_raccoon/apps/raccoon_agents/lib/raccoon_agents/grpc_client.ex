@@ -49,17 +49,25 @@ defmodule RaccoonAgents.GRPCClient do
          {:ok, channel} <- connect() do
       request = build_request(params)
 
-      case AgentService.Stub.execute_agent(channel, request, timeout: :infinity) do
-        {:ok, stream} ->
-          {:ok, stream, channel}
+      try do
+        stream = AgentService.Stub.execute_agent(channel, request)
 
-        {:error, %GRPC.RPCError{} = error} ->
-          GRPC.Stub.disconnect(channel)
-          {:error, {:grpc_error, error.status, error.message}}
+        case GRPC.Stub.recv(stream) do
+          {:ok, enum} ->
+            {:ok, enum, channel}
 
-        {:error, reason} ->
+          {:error, %GRPC.RPCError{} = error} ->
+            GRPC.Stub.disconnect(channel)
+            {:error, {:grpc_error, error.status, error.message}}
+
+          {:error, reason} ->
+            GRPC.Stub.disconnect(channel)
+            {:error, reason}
+        end
+      rescue
+        e ->
           GRPC.Stub.disconnect(channel)
-          {:error, reason}
+          {:error, e}
       end
     end
   end
