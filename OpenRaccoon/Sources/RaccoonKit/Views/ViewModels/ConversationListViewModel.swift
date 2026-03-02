@@ -8,12 +8,14 @@ public final class ConversationListViewModel {
     public var error: String?
 
     private let apiClient: APIClient
+    private let conversationStore: ConversationStore?
 
     private var nextCursor: String?
     private var hasMore: Bool = true
 
-    public init(apiClient: APIClient) {
+    public init(apiClient: APIClient, conversationStore: ConversationStore? = nil) {
         self.apiClient = apiClient
+        self.conversationStore = conversationStore
     }
 
     public func loadConversations() async {
@@ -27,6 +29,12 @@ public final class ConversationListViewModel {
             conversations = response.items
             nextCursor = response.pageInfo.nextCursor
             hasMore = response.pageInfo.hasMore
+
+            // Sync into the shared conversation store so other views
+            // can look up conversation metadata (type, title, etc.).
+            if let store = conversationStore {
+                store.conversations = response.items
+            }
         } catch {
             self.error = String(describing: error)
         }
@@ -44,6 +52,13 @@ public final class ConversationListViewModel {
             conversations.append(contentsOf: response.items)
             nextCursor = response.pageInfo.nextCursor
             hasMore = response.pageInfo.hasMore
+
+            // Sync new items into the shared store.
+            if let store = conversationStore {
+                for conversation in response.items {
+                    store.upsert(conversation)
+                }
+            }
         } catch {
             self.error = String(describing: error)
         }

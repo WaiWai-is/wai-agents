@@ -38,6 +38,10 @@ defmodule RaccoonAccounts.Token do
       # Revoke the old refresh token before issuing new ones (token rotation)
       revoke_by_claims(claims)
       create_tokens(user)
+    else
+      {:error, :token_revoked} -> {:error, :token_revoked}
+      {:error, :resource_not_found} -> {:error, :invalid_token}
+      {:error, _reason} -> {:error, :invalid_token}
     end
   end
 

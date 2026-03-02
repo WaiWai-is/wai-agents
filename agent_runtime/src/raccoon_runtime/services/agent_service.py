@@ -5,6 +5,7 @@ Routes to the appropriate runner based on execution_mode.
 Deadline policy: 60s per turn (configurable by deployment).
 """
 
+import asyncio
 from typing import Any
 
 import grpc
@@ -111,6 +112,7 @@ class AgentServiceServicer:
         self.settings = settings
         self.factory = RunnerFactory(settings)
         self._active_runners: dict[str, BaseAgentRunner] = {}
+        self._runners_lock = asyncio.Lock()
 
     async def ExecuteAgent(  # noqa: N802
         self,
@@ -140,7 +142,8 @@ class AgentServiceServicer:
 
         # Create runner
         runner = self.factory.create(mode, user_api_key or None)
-        self._active_runners[conversation_id] = runner
+        async with self._runners_lock:
+            self._active_runners[conversation_id] = runner
 
         try:
             # Convert proto messages to dicts
@@ -194,7 +197,8 @@ class AgentServiceServicer:
                 yield _event_to_response(event)
 
         finally:
-            self._active_runners.pop(conversation_id, None)
+            async with self._runners_lock:
+                self._active_runners.pop(conversation_id, None)
 
     async def SubmitApproval(  # noqa: N802
         self,
@@ -202,7 +206,8 @@ class AgentServiceServicer:
         context: grpc.aio.ServicerContext,
     ) -> pb2.ApprovalAck:
         """Submit an approval decision to a running execution."""
-        runner = self._active_runners.get(request.conversation_id)
+        async with self._runners_lock:
+            runner = self._active_runners.get(request.conversation_id)
         if not runner:
             return pb2.ApprovalAck(
                 accepted=False,

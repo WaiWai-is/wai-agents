@@ -446,6 +446,15 @@ public final class WebSocketClient: @unchecked Sendable {
         }
     }
 
+    /// Leave an agent channel and remove it from tracked channels.
+    public func leaveAgentChannel(conversationID: String) {
+        let topic = "agent:\(conversationID)"
+        joinedTopics.remove(topic)
+        if let channel = activeChannels.removeValue(forKey: topic) {
+            channel.leave()
+        }
+    }
+
     /// Leave a channel.
     public func leave(_ channel: Channel) {
         // Remove from tracked channels if present

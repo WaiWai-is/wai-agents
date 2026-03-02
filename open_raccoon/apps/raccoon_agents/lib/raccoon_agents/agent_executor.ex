@@ -37,19 +37,31 @@ defmodule RaccoonAgents.AgentExecutor do
   Returns `{:ok, pid}` of the executor process.
   """
   def execute(conversation_id, agent_id, user_id, messages, config) do
-    {:ok, pid} =
-      start_link(%{
-        conversation_id: conversation_id,
-        agent_id: agent_id,
-        user_id: user_id
-      })
+    case start_link(%{
+           conversation_id: conversation_id,
+           agent_id: agent_id,
+           user_id: user_id
+         }) do
+      {:ok, pid} ->
+        GenServer.cast(pid, {:execute, messages, config})
+        {:ok, pid}
 
-    GenServer.cast(pid, {:execute, messages, config})
-    {:ok, pid}
+      {:error, {:already_started, _pid}} ->
+        Logger.warning("Agent execution already in progress",
+          conversation_id: conversation_id
+        )
+
+        {:error, :already_executing}
+    end
   end
 
   def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts)
+    name = via_tuple(opts.conversation_id)
+    GenServer.start_link(__MODULE__, opts, name: name)
+  end
+
+  defp via_tuple(conversation_id) do
+    {:via, Registry, {RaccoonAgents.ExecutorRegistry, conversation_id}}
   end
 
   # -- Callbacks -------------------------------------------------------------
@@ -69,16 +81,13 @@ defmodule RaccoonAgents.AgentExecutor do
     topic = "agent:#{state.conversation_id}"
 
     # 1. Check agent visibility - private agents can only be used by their creator
-    with :ok <- check_agent_visibility(state.agent_id, state.user_id),
+    with {:ok, agent} <- check_agent_visibility(state.agent_id, state.user_id),
          # 2. Check cost limit before execution
          :ok <- CostTracker.check_limit(state.user_id) do
       broadcast(topic, "status", %{
         message: "connecting to agent runtime...",
         category: "thinking"
       })
-
-      # Load agent to include mcp_servers and execution_mode in the gRPC config
-      agent = Repo.get!(Agent, state.agent_id)
 
       enriched_config =
         config
@@ -135,31 +144,47 @@ defmodule RaccoonAgents.AgentExecutor do
   # -- Private ---------------------------------------------------------------
 
   defp consume_stream(event_stream, topic, state, _channel) do
-    tokens_acc =
-      Enum.reduce(event_stream, [], fn
-        {:ok, response}, acc ->
-          event = GRPCClient.response_to_event(response)
-          broadcast_event(topic, event, state)
+    task =
+      Task.async(fn ->
+        Enum.reduce(event_stream, [], fn
+          {:ok, response}, acc ->
+            event = GRPCClient.response_to_event(response)
+            broadcast_event(topic, event, state)
 
-          case event do
-            %{type: "token", text: text} -> [text | acc]
-            _ -> acc
-          end
+            case event do
+              %{type: "token", text: text} -> [text | acc]
+              _ -> acc
+            end
 
-        {:error, error}, acc ->
-          Logger.error("gRPC stream error: #{inspect(error)}",
-            conversation_id: state.conversation_id
-          )
+          {:error, error}, acc ->
+            Logger.error("gRPC stream error: #{inspect(error)}",
+              conversation_id: state.conversation_id
+            )
 
-          broadcast(topic, "error", %{
-            code: "stream_error",
-            message: "Agent stream error: #{inspect(error)}"
-          })
+            broadcast(topic, "error", %{
+              code: "stream_error",
+              message: "Agent stream error: #{inspect(error)}"
+            })
 
-          acc
+            acc
+        end)
       end)
 
-    save_agent_response(tokens_acc, state)
+    case Task.yield(task, @stream_timeout) || Task.shutdown(task, :brutal_kill) do
+      {:ok, tokens_acc} ->
+        save_agent_response(tokens_acc, state)
+
+      nil ->
+        Logger.error("gRPC stream timed out after #{@stream_timeout}ms",
+          conversation_id: state.conversation_id
+        )
+
+        broadcast(topic, "error", %{
+          code: "stream_timeout",
+          message: "Agent response timed out."
+        })
+    end
+
     :ok
   end
 
@@ -168,7 +193,8 @@ defmodule RaccoonAgents.AgentExecutor do
 
     if String.trim(text) != "" do
       now = DateTime.utc_now()
-      {:ok, message_id_bin} = Ecto.UUID.dump(Ecto.UUID.generate())
+      message_id = Ecto.UUID.generate()
+      {:ok, message_id_bin} = Ecto.UUID.dump(message_id)
       {:ok, conversation_id_bin} = Ecto.UUID.dump(state.conversation_id)
 
       {1, _} =
@@ -187,6 +213,25 @@ defmodule RaccoonAgents.AgentExecutor do
 
       from(c in "conversations", where: c.id == ^conversation_id_bin)
       |> Repo.update_all(set: [last_message_at: now, updated_at: now])
+
+      # Broadcast to conversation topic so WebSocket clients receive the agent reply
+      Phoenix.PubSub.broadcast(
+        RaccoonGateway.PubSub,
+        "conversation:#{state.conversation_id}",
+        {:new_message,
+         %{
+           id: message_id,
+           conversation_id: state.conversation_id,
+           sender_id: nil,
+           sender_type: :agent,
+           type: :text,
+           content: %{"text" => text},
+           metadata: %{"agent_id" => state.agent_id},
+           edited_at: nil,
+           deleted_at: nil,
+           created_at: now
+         }}
+      )
 
       Logger.info("Saved agent response",
         conversation_id: state.conversation_id
@@ -281,8 +326,8 @@ defmodule RaccoonAgents.AgentExecutor do
       %Agent{visibility: :private, creator_id: creator_id} when creator_id != user_id ->
         {:error, :private_agent}
 
-      %Agent{} ->
-        :ok
+      %Agent{} = agent ->
+        {:ok, agent}
     end
   end
 

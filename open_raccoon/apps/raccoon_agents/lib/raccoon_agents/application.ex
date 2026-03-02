@@ -10,6 +10,7 @@ defmodule RaccoonAgents.Application do
       RaccoonAgents.CostTracker,
       {RaccoonAgents.ToolApproval.Store, []},
       {Registry, keys: :unique, name: RaccoonAgents.ProcessRegistry},
+      {Registry, keys: :unique, name: RaccoonAgents.ExecutorRegistry},
       RaccoonAgents.AgentSupervisor,
       RaccoonAgents.EventRouter
     ]

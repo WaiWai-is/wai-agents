@@ -11,7 +11,7 @@ public struct MessageEnvelope: Codable, Identifiable, Sendable, Equatable {
     public var metadata: MessageMetadata?
     public var reactions: [MessageReaction]?
     public let createdAt: Date
-    public var updatedAt: Date
+    public var updatedAt: Date?
 
     public struct SenderInfo: Codable, Sendable, Equatable {
         public let id: String
@@ -60,7 +60,7 @@ public struct MessageEnvelope: Codable, Identifiable, Sendable, Equatable {
         metadata: MessageMetadata? = nil,
         reactions: [MessageReaction]? = nil,
         createdAt: Date = Date(),
-        updatedAt: Date = Date()
+        updatedAt: Date? = Date()
     ) {
         self.id = id
         self.conversationID = conversationID

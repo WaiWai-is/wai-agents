@@ -32,112 +32,135 @@ defmodule RaccoonGatewayWeb.AgentController do
   end
 
   def show(conn, %{"id" => id}) do
-    case RaccoonAgents.get_agent(id) do
-      nil -> {:error, :not_found}
-      agent -> json(conn, %{agent: agent_json(agent)})
+    user_id = conn.assigns.user_id
+
+    with {:ok, id} <- validate_uuid(id) do
+      case RaccoonAgents.get_agent(id) do
+        nil ->
+          {:error, :not_found}
+
+        %{visibility: :private, creator_id: creator_id} when creator_id != user_id ->
+          {:error, :not_found}
+
+        agent ->
+          json(conn, %{agent: agent_json(agent)})
+      end
     end
   end
 
   def update(conn, %{"id" => id} = params) do
     user_id = conn.assigns.user_id
 
-    case RaccoonAgents.get_agent(id) do
-      nil ->
-        {:error, :not_found}
+    with {:ok, id} <- validate_uuid(id) do
+      case RaccoonAgents.get_agent(id) do
+        nil ->
+          {:error, :not_found}
 
-      %{creator_id: ^user_id} = agent ->
-        allowed_keys = [
-          "name",
-          "slug",
-          "description",
-          "avatar_url",
-          "system_prompt",
-          "model",
-          "temperature",
-          "max_tokens",
-          "tools",
-          "mcp_servers",
-          "visibility",
-          "category",
-          "metadata"
-        ]
+        %{creator_id: ^user_id} = agent ->
+          allowed_keys = [
+            "name",
+            "slug",
+            "description",
+            "avatar_url",
+            "system_prompt",
+            "model",
+            "temperature",
+            "max_tokens",
+            "tools",
+            "mcp_servers",
+            "visibility",
+            "category",
+            "metadata"
+          ]
 
-        update_params = Map.take(params, allowed_keys)
+          update_params = Map.take(params, allowed_keys)
 
-        with {:ok, updated} <- RaccoonAgents.update_agent(agent, update_params) do
-          json(conn, %{agent: agent_json(updated)})
-        end
+          with {:ok, updated} <- RaccoonAgents.update_agent(agent, update_params) do
+            json(conn, %{agent: agent_json(updated)})
+          end
 
-      _agent ->
-        {:error, :forbidden}
+        _agent ->
+          {:error, :forbidden}
+      end
     end
   end
 
   def delete(conn, %{"id" => id}) do
     user_id = conn.assigns.user_id
 
-    case RaccoonAgents.get_agent(id) do
-      nil ->
-        {:error, :not_found}
+    with {:ok, id} <- validate_uuid(id) do
+      case RaccoonAgents.get_agent(id) do
+        nil ->
+          {:error, :not_found}
 
-      %{creator_id: ^user_id} = agent ->
-        with {:ok, _} <- RaccoonAgents.delete_agent(agent) do
-          send_resp(conn, :no_content, "")
-        end
+        %{creator_id: ^user_id} = agent ->
+          with {:ok, _} <- RaccoonAgents.delete_agent(agent) do
+            send_resp(conn, :no_content, "")
+          end
 
-      _agent ->
-        {:error, :forbidden}
+        _agent ->
+          {:error, :forbidden}
+      end
     end
   end
 
   def start_conversation(conn, %{"id" => agent_id}) do
     user_id = conn.assigns.user_id
 
-    case RaccoonAgents.get_agent(agent_id) do
-      nil ->
-        {:error, :not_found}
+    with {:ok, agent_id} <- validate_uuid(agent_id) do
+      case RaccoonAgents.get_agent(agent_id) do
+        nil ->
+          {:error, :not_found}
 
-      %{visibility: :private, creator_id: creator_id} when creator_id != user_id ->
-        {:error, :forbidden}
+        %{visibility: :private, creator_id: creator_id} when creator_id != user_id ->
+          {:error, :forbidden}
 
-      agent ->
-        # Reuse existing agent conversation if one exists (idempotency)
-        case RaccoonChat.find_agent_conversation(user_id, agent.id) do
-          %Conversation{} = existing ->
-            json(conn, %{
-              conversation: %{
-                id: existing.id,
-                type: existing.type,
-                title: existing.title,
-                agent_id: existing.agent_id,
-                created_at: existing.inserted_at
-              }
-            })
-
-          nil ->
-            with {:ok, conversation} <-
-                   RaccoonChat.create_conversation_with_members(
-                     %{
-                       type: :agent,
-                       title: agent.name,
-                       creator_id: user_id,
-                       agent_id: agent.id
-                     },
-                     [%{user_id: user_id, role: :owner}]
-                   ) do
-              conn
-              |> put_status(:created)
-              |> json(%{
+        agent ->
+          # Reuse existing agent conversation if one exists (idempotency)
+          case RaccoonChat.find_agent_conversation(user_id, agent.id) do
+            %Conversation{} = existing ->
+              json(conn, %{
                 conversation: %{
-                  id: conversation.id,
-                  type: conversation.type,
-                  title: conversation.title,
-                  agent_id: conversation.agent_id,
-                  created_at: conversation.inserted_at
+                  id: existing.id,
+                  type: existing.type,
+                  title: existing.title,
+                  agent_id: existing.agent_id,
+                  created_at: existing.inserted_at
                 }
               })
-            end
-        end
+
+            nil ->
+              with {:ok, conversation} <-
+                     RaccoonChat.create_conversation_with_members(
+                       %{
+                         type: :agent,
+                         title: agent.name,
+                         creator_id: user_id,
+                         agent_id: agent.id
+                       },
+                       [%{user_id: user_id, role: :owner}]
+                     ) do
+                conn
+                |> put_status(:created)
+                |> json(%{
+                  conversation: %{
+                    id: conversation.id,
+                    type: conversation.type,
+                    title: conversation.title,
+                    agent_id: conversation.agent_id,
+                    created_at: conversation.inserted_at
+                  }
+                })
+              end
+          end
+      end
+    end
+  end
+
+  defp validate_uuid(id) do
+    case Ecto.UUID.cast(id) do
+      {:ok, uuid} -> {:ok, uuid}
+      :error -> {:error, :not_found}
     end
   end
 

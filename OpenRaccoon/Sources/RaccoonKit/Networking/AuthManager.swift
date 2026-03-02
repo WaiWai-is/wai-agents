@@ -1,8 +1,68 @@
 import Foundation
 import KeychainAccess
 
-public actor AuthManager {
+// MARK: - Token Storage Protocol
+
+/// Abstraction for token persistence so we can swap Keychain (release)
+/// for UserDefaults (debug) to avoid macOS Keychain password prompts
+/// that appear on every rebuild when code signing identity changes.
+protocol TokenStorage {
+    func get(_ key: String) throws -> String?
+    func set(_ value: String, key: String) throws
+    func remove(_ key: String) throws
+}
+
+/// Wraps KeychainAccess.Keychain to conform to TokenStorage.
+final class KeychainTokenStorage: TokenStorage {
     private let keychain: Keychain
+
+    init(serviceName: String) {
+        self.keychain = Keychain(service: serviceName)
+    }
+
+    func get(_ key: String) throws -> String? {
+        try keychain.get(key)
+    }
+
+    func set(_ value: String, key: String) throws {
+        try keychain.set(value, key: key)
+    }
+
+    func remove(_ key: String) throws {
+        try keychain.remove(key)
+    }
+}
+
+#if DEBUG
+/// Debug-only storage that uses UserDefaults instead of Keychain.
+/// Avoids the macOS "wants to use your confidential information" prompt
+/// that appears every time the app is rebuilt with a different signing identity.
+final class UserDefaultsTokenStorage: TokenStorage {
+    private let defaults = UserDefaults.standard
+    private let prefix: String
+
+    init(serviceName: String) {
+        self.prefix = "\(serviceName).debug."
+    }
+
+    func get(_ key: String) throws -> String? {
+        defaults.string(forKey: prefix + key)
+    }
+
+    func set(_ value: String, key: String) throws {
+        defaults.set(value, forKey: prefix + key)
+    }
+
+    func remove(_ key: String) throws {
+        defaults.removeObject(forKey: prefix + key)
+    }
+}
+#endif
+
+// MARK: - Auth Manager
+
+public actor AuthManager {
+    private let tokenStorage: TokenStorage
     private var accessToken: String?
     private var refreshToken: String?
     private var tokenExpiry: Date?
@@ -19,11 +79,15 @@ public actor AuthManager {
     }
 
     public init(serviceName: String = "com.openraccoon.app", baseURL: URL? = nil) {
-        self.keychain = Keychain(service: serviceName)
+        #if DEBUG
+        self.tokenStorage = UserDefaultsTokenStorage(serviceName: serviceName)
+        #else
+        self.tokenStorage = KeychainTokenStorage(serviceName: serviceName)
+        #endif
         self.baseURL = baseURL
-        self.accessToken = try? keychain.get("access_token")
-        self.refreshToken = try? keychain.get("refresh_token")
-        if let expiryString = try? keychain.get("token_expiry"),
+        self.accessToken = try? tokenStorage.get("access_token")
+        self.refreshToken = try? tokenStorage.get("refresh_token")
+        if let expiryString = try? tokenStorage.get("token_expiry"),
            let expiryInterval = Double(expiryString) {
             self.tokenExpiry = Date(timeIntervalSince1970: expiryInterval)
         }
@@ -118,10 +182,10 @@ public actor AuthManager {
         self.accessToken = access
         self.refreshToken = refresh
         self.tokenExpiry = Date().addingTimeInterval(expiresIn)
-        try keychain.set(access, key: "access_token")
-        try keychain.set(refresh, key: "refresh_token")
+        try tokenStorage.set(access, key: "access_token")
+        try tokenStorage.set(refresh, key: "refresh_token")
         if let expiry = tokenExpiry {
-            try keychain.set(String(expiry.timeIntervalSince1970), key: "token_expiry")
+            try tokenStorage.set(String(expiry.timeIntervalSince1970), key: "token_expiry")
         }
     }
 
@@ -129,9 +193,9 @@ public actor AuthManager {
         self.accessToken = nil
         self.refreshToken = nil
         self.tokenExpiry = nil
-        try keychain.remove("access_token")
-        try keychain.remove("refresh_token")
-        try keychain.remove("token_expiry")
+        try tokenStorage.remove("access_token")
+        try tokenStorage.remove("refresh_token")
+        try tokenStorage.remove("token_expiry")
     }
 
     public var isAuthenticated: Bool {

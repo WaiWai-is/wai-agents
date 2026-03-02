@@ -81,29 +81,40 @@ defmodule RaccoonGatewayWeb.FeedController do
   def like(conn, %{"id" => feed_item_id}) do
     user_id = conn.assigns.user_id
 
-    case RaccoonFeed.like_item(feed_item_id, user_id) do
-      {:ok, _like} ->
-        json(conn, %{status: "liked"})
+    with {:ok, feed_item_id} <- validate_uuid(feed_item_id) do
+      case RaccoonFeed.get_feed_item(feed_item_id) do
+        nil ->
+          {:error, :not_found}
 
-      {:error, _reason} ->
-        # Idempotent: if already liked, return success
-        json(conn, %{status: "liked"})
+        _item ->
+          case RaccoonFeed.like_item(feed_item_id, user_id) do
+            {:ok, _like} ->
+              json(conn, %{status: "liked"})
+
+            {:error, _reason} ->
+              # Idempotent: if already liked, return success
+              json(conn, %{status: "liked"})
+          end
+      end
     end
   end
 
   def unlike(conn, %{"id" => feed_item_id}) do
     user_id = conn.assigns.user_id
 
-    case RaccoonFeed.unlike_item(feed_item_id, user_id) do
-      {:ok, _} -> send_resp(conn, :no_content, "")
-      {:error, reason} -> {:error, reason}
+    with {:ok, feed_item_id} <- validate_uuid(feed_item_id) do
+      case RaccoonFeed.unlike_item(feed_item_id, user_id) do
+        {:ok, _} -> send_resp(conn, :no_content, "")
+        {:error, reason} -> {:error, reason}
+      end
     end
   end
 
   def fork(conn, %{"id" => feed_item_id}) do
     user_id = conn.assigns.user_id
 
-    with {:ok, item} <- RaccoonFeed.fork_item(feed_item_id, user_id) do
+    with {:ok, feed_item_id} <- validate_uuid(feed_item_id),
+         {:ok, item} <- RaccoonFeed.fork_item(feed_item_id, user_id) do
       response = %{feed_item: feed_item_json(item)}
 
       if idempotency_key = conn.assigns[:idempotency_key] do
@@ -113,6 +124,13 @@ defmodule RaccoonGatewayWeb.FeedController do
       conn
       |> put_status(:created)
       |> json(response)
+    end
+  end
+
+  defp validate_uuid(id) do
+    case Ecto.UUID.cast(id) do
+      {:ok, uuid} -> {:ok, uuid}
+      :error -> {:error, :not_found}
     end
   end
 

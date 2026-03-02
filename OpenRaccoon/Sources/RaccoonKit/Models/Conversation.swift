@@ -11,7 +11,7 @@ public struct Conversation: Codable, Identifiable, Sendable, Equatable {
     public var metadata: [String: AnyCodable]?
     public var lastMessageAt: Date?
     public let createdAt: Date
-    public var updatedAt: Date
+    public var updatedAt: Date?
 
     public enum ConversationType: String, Codable, Sendable {
         case dm
@@ -45,7 +45,7 @@ public struct Conversation: Codable, Identifiable, Sendable, Equatable {
         metadata: [String: AnyCodable]? = nil,
         lastMessageAt: Date? = nil,
         createdAt: Date = Date(),
-        updatedAt: Date = Date()
+        updatedAt: Date? = Date()
     ) {
         self.id = id
         self.type = type

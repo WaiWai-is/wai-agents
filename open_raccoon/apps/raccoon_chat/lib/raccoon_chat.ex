@@ -86,6 +86,30 @@ defmodule RaccoonChat do
     Repo.delete(conv)
   end
 
+  @doc """
+  Delete a conversation along with all its messages and reactions.
+  Messages have ON DELETE CASCADE at the DB level (via migration), but we also
+  delete them explicitly for clarity. Reactions have no DB-level FK to messages
+  (partitioned table), so we clean them up manually. Members have ON DELETE
+  CASCADE so they are handled automatically.
+  """
+  def delete_conversation_with_messages(%Conversation{} = conv) do
+    message_ids_query = from(m in Message, where: m.conversation_id == ^conv.id, select: m.id)
+
+    Multi.new()
+    |> Multi.delete_all(
+      :reactions,
+      from(r in MessageReaction, where: r.message_id in subquery(message_ids_query))
+    )
+    |> Multi.delete_all(:messages, from(m in Message, where: m.conversation_id == ^conv.id))
+    |> Multi.delete(:conversation, conv)
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{conversation: conversation}} -> {:ok, conversation}
+      {:error, _step, changeset, _changes} -> {:error, changeset}
+    end
+  end
+
   def list_user_conversations(user_id) do
     from(c in Conversation,
       join: m in ConversationMember,

@@ -40,7 +40,7 @@ defmodule RaccoonGatewayWeb.MarketplaceController do
       nil ->
         {:error, :not_found}
 
-      agent ->
+      %{visibility: :public} = agent ->
         ratings = RaccoonAgents.get_agent_ratings(agent.id)
 
         json(conn, %{
@@ -56,32 +56,37 @@ defmodule RaccoonGatewayWeb.MarketplaceController do
               }
             end)
         })
+
+      _non_public ->
+        {:error, :not_found}
     end
   end
 
   def rate(conn, %{"id" => agent_id} = params) do
     user_id = conn.assigns.user_id
 
-    attrs = %{
-      agent_id: agent_id,
-      user_id: user_id,
-      rating: params["rating"],
-      review: params["review"]
-    }
+    with {:ok, agent_id} <- validate_uuid(agent_id) do
+      attrs = %{
+        agent_id: agent_id,
+        user_id: user_id,
+        rating: params["rating"],
+        review: params["review"]
+      }
 
-    with {:ok, rating} <- RaccoonAgents.rate_agent(attrs) do
-      conn
-      |> put_status(:created)
-      |> json(%{
-        rating: %{
-          id: rating.id,
-          agent_id: rating.agent_id,
-          user_id: rating.user_id,
-          rating: rating.rating,
-          review: rating.review,
-          created_at: rating.inserted_at
-        }
-      })
+      with {:ok, rating} <- RaccoonAgents.rate_agent(attrs) do
+        conn
+        |> put_status(:created)
+        |> json(%{
+          rating: %{
+            id: rating.id,
+            agent_id: rating.agent_id,
+            user_id: rating.user_id,
+            rating: rating.rating,
+            review: rating.review,
+            created_at: rating.inserted_at
+          }
+        })
+      end
     end
   end
 
@@ -101,6 +106,13 @@ defmodule RaccoonGatewayWeb.MarketplaceController do
   def search(conn, params) do
     # No query provided, return full listing
     index(conn, params)
+  end
+
+  defp validate_uuid(id) do
+    case Ecto.UUID.cast(id) do
+      {:ok, uuid} -> {:ok, uuid}
+      :error -> {:error, :not_found}
+    end
   end
 
   defp marketplace_agent_json(agent) do

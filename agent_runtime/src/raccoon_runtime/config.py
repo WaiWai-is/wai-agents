@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     """Runtime settings loaded from environment variables prefixed with RACCOON_."""
 
     # gRPC
+    grpc_host: str = "127.0.0.1"
     grpc_port: int = 50051
     max_workers: int = 10
     max_message_size: int = 50 * 1024 * 1024  # 50MB
@@ -26,6 +27,9 @@ class Settings(BaseSettings):
     agent_turn_deadline: int = 60
     tool_call_deadline: int = 20
     code_execution_deadline: int = 45
+
+    # Agent execution limits
+    max_agent_turns: int = 25  # Max tool-loop iterations per execution
 
     # Observability
     otel_endpoint: str = ""

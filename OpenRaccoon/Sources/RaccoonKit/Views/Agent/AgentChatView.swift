@@ -226,15 +226,21 @@ public struct AgentChatView: View {
                 let vm = ConversationDetailViewModel(
                     conversationID: conversationID,
                     apiClient: appState.apiClient,
-                    currentUserID: currentUserID
+                    currentUserID: currentUserID,
+                    webSocketClient: appState.webSocketClient
                 )
                 viewModel = vm
                 await vm.loadMessages()
+                vm.subscribeToChannel()
             }
 
             // Join agent channel for streaming events
             subscribeToAgentEvents()
             appState.webSocketClient?.joinAgentChannel(conversationID: conversationID)
+        }
+        .onDisappear {
+            viewModel?.unsubscribeFromChannel()
+            cleanupAgentChannel()
         }
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
@@ -249,6 +255,21 @@ public struct AgentChatView: View {
             }
         }
         #endif
+    }
+
+    private func cleanupAgentChannel() {
+        streamingResetTask?.cancel()
+        streamingResetTask = nil
+        let ws = appState.webSocketClient
+        ws?.onToken = nil
+        ws?.onStatus = nil
+        ws?.onApprovalRequested = nil
+        ws?.onToolCall = nil
+        ws?.onToolResult = nil
+        ws?.onCodeBlock = nil
+        ws?.onComplete = nil
+        ws?.onError = nil
+        ws?.leaveAgentChannel(conversationID: conversationID)
     }
 
     private func subscribeToAgentEvents() {
@@ -323,6 +344,12 @@ public struct AgentChatView: View {
             isAgentStreaming = false
             agentStatus = ""
             streamingText = ""
+            // Re-fetch messages to pick up the persisted agent response.
+            // The conversation channel should deliver it in real-time, but
+            // this re-fetch acts as a safety net for race conditions.
+            Task {
+                await viewModel?.loadMessages()
+            }
         }
 
         ws?.onError = { payload in

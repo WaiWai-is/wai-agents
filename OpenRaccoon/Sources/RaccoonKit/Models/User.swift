@@ -7,12 +7,12 @@ public struct User: Codable, Identifiable, Sendable, Equatable {
     public var email: String?
     public var avatarURL: URL?
     public var bio: String?
-    public var status: UserStatus
-    public var role: UserRole
+    public var status: UserStatus?
+    public var role: UserRole?
     public var settings: [String: AnyCodable]?
     public var lastSeenAt: Date?
     public let createdAt: Date
-    public var updatedAt: Date
+    public var updatedAt: Date?
 
     public enum UserStatus: String, Codable, Sendable {
         case active
@@ -48,12 +48,12 @@ public struct User: Codable, Identifiable, Sendable, Equatable {
         email: String? = nil,
         avatarURL: URL? = nil,
         bio: String? = nil,
-        status: UserStatus = .active,
-        role: UserRole = .user,
+        status: UserStatus? = .active,
+        role: UserRole? = .user,
         settings: [String: AnyCodable]? = nil,
         lastSeenAt: Date? = nil,
         createdAt: Date = Date(),
-        updatedAt: Date = Date()
+        updatedAt: Date? = Date()
     ) {
         self.id = id
         self.username = username

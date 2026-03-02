@@ -120,7 +120,7 @@ public struct AgentProfileView: View {
                         .font(RaccoonTypography.bodySmall)
                         .foregroundStyle(textSecondary)
 
-                    Text("(\(agent.ratingCount) reviews)")
+                    Text("(\(agent.ratingCount ?? 0) reviews)")
                         .font(RaccoonTypography.caption)
                         .foregroundStyle(textTertiary)
                 }
@@ -191,11 +191,19 @@ public struct AgentProfileView: View {
                 .font(RaccoonTypography.h3)
                 .foregroundStyle(textPrimary)
 
-            detailRow(label: "Model", value: agent.model)
-            detailRow(label: "Temperature", value: String(format: "%.1f", agent.temperature))
-            detailRow(label: "Max Tokens", value: "\(agent.maxTokens)")
-            detailRow(label: "Usage", value: "\(agent.usageCount) conversations")
-            detailRow(label: "Visibility", value: agent.visibility.rawValue.capitalized)
+            if let model = agent.model {
+                detailRow(label: "Model", value: model)
+            }
+            if let temperature = agent.temperature {
+                detailRow(label: "Temperature", value: String(format: "%.1f", temperature))
+            }
+            if let maxTokens = agent.maxTokens {
+                detailRow(label: "Max Tokens", value: "\(maxTokens)")
+            }
+            detailRow(label: "Usage", value: "\(agent.usageCount ?? 0) conversations")
+            if let visibility = agent.visibility {
+                detailRow(label: "Visibility", value: visibility.rawValue.capitalized)
+            }
         }
     }
 

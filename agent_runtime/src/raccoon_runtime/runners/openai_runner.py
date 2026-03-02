@@ -102,8 +102,21 @@ class OpenAIRunner(BaseAgentRunner):
             client = openai.AsyncOpenAI(api_key=self.api_key)
 
             # Agentic loop
+            max_turns = self.settings.max_agent_turns
             async with asyncio.timeout(deadline):
+                turn = 0
                 while not self._cancelled:
+                    turn += 1
+                    if turn > max_turns:
+                        yield AgentEvent(
+                            type="error",
+                            data={
+                                "code": "max_turns_exceeded",
+                                "message": f"Agent exceeded maximum {max_turns} tool-loop turns",
+                                "retryable": False,
+                            },
+                        )
+                        return
                     kwargs: dict[str, Any] = {
                         "model": model,
                         "messages": openai_messages,

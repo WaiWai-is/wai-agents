@@ -108,6 +108,70 @@ struct ModelTests {
         #expect(agent.averageRating == 4.5)
     }
 
+    @Test("Agent decodes from marketplace JSON (partial fields)")
+    func agentDecodeMarketplace() throws {
+        // Marketplace endpoint omits system_prompt, temperature, max_tokens, rating_sum, tools, mcp_servers, metadata
+        let json = """
+        {
+            "id": "agent_789",
+            "creator_id": "user_123",
+            "name": "Code Helper",
+            "slug": "code-helper",
+            "description": "A helpful coding assistant",
+            "model": "claude-sonnet-4-6",
+            "category": "coding",
+            "visibility": "public",
+            "usage_count": 100,
+            "rating_count": 10,
+            "average_rating": 4.5,
+            "created_at": "2026-02-25T08:00:00Z",
+            "updated_at": "2026-02-25T08:00:00Z"
+        }
+        """.data(using: .utf8)!
+
+        let agent = try JSONDecoder.raccoon.decode(Agent.self, from: json)
+        #expect(agent.id == "agent_789")
+        #expect(agent.name == "Code Helper")
+        #expect(agent.visibility == .public)
+        #expect(agent.systemPrompt == nil)
+        #expect(agent.temperature == nil)
+        #expect(agent.maxTokens == nil)
+        #expect(agent.ratingSum == nil)
+        #expect(agent.averageRating == 4.5)
+    }
+
+    @Test("PaginatedResponse<Agent> decodes marketplace listing")
+    func paginatedAgentDecode() throws {
+        let json = """
+        {
+            "items": [
+                {
+                    "id": "agent_001",
+                    "creator_id": "user_123",
+                    "name": "Agent One",
+                    "slug": "agent-one",
+                    "model": "claude-sonnet-4-6",
+                    "visibility": "public",
+                    "usage_count": 50,
+                    "rating_count": 5,
+                    "average_rating": 4.0,
+                    "created_at": "2026-02-25T08:00:00Z",
+                    "updated_at": "2026-02-25T08:00:00Z"
+                }
+            ],
+            "page_info": {
+                "next_cursor": null,
+                "has_more": false
+            }
+        }
+        """.data(using: .utf8)!
+
+        let response = try JSONDecoder.raccoon.decode(PaginatedResponse<Agent>.self, from: json)
+        #expect(response.items.count == 1)
+        #expect(response.items[0].name == "Agent One")
+        #expect(response.pageInfo.hasMore == false)
+    }
+
     @Test("BridgeConnection decodes from JSON")
     func bridgeConnectionDecode() throws {
         let json = """

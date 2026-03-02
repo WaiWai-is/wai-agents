@@ -38,6 +38,18 @@ defmodule RaccoonGatewayWeb.FallbackController do
     |> json(%{error: %{code: "unauthorized", message: "Invalid email or password"}})
   end
 
+  def call(conn, {:error, :token_revoked}) do
+    conn
+    |> put_status(:unauthorized)
+    |> json(%{error: %{code: "token_revoked", message: "Token has been revoked"}})
+  end
+
+  def call(conn, {:error, :invalid_token}) do
+    conn
+    |> put_status(:unauthorized)
+    |> json(%{error: %{code: "invalid_token", message: "Token is invalid or expired"}})
+  end
+
   def call(conn, {:error, :forbidden}) do
     conn
     |> put_status(:forbidden)

@@ -34,14 +34,25 @@ public struct ConversationListView: View {
         }
         .task {
             if viewModel == nil {
-                let vm = ConversationListViewModel(apiClient: appState.apiClient)
+                let vm = ConversationListViewModel(
+                    apiClient: appState.apiClient,
+                    conversationStore: appState.conversationStore
+                )
                 viewModel = vm
                 await vm.loadConversations()
             }
         }
         #if os(iOS)
         .navigationDestination(for: String.self) { conversationID in
-            ConversationDetailView(conversationID: conversationID)
+            let conversation = appState.conversationStore.conversation(byID: conversationID)
+            if conversation?.type == .agent {
+                AgentChatView(
+                    conversationID: conversationID,
+                    agentName: conversation?.title ?? "Agent"
+                )
+            } else {
+                ConversationDetailView(conversationID: conversationID)
+            }
         }
         #endif
     }

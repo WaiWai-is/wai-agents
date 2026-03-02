@@ -225,7 +225,7 @@ public struct MarketplaceView: View {
             // Rating and usage
             HStack(spacing: RaccoonSpacing.space3) {
                 // Stars
-                if agent.ratingCount > 0 {
+                if (agent.ratingCount ?? 0) > 0 {
                     HStack(spacing: 2) {
                         Image(systemName: "star.fill")
                             .font(.system(size: 11))
@@ -233,7 +233,7 @@ public struct MarketplaceView: View {
                         Text(String(format: "%.1f", agent.averageRating))
                             .font(RaccoonTypography.caption)
                             .foregroundStyle(textSecondary)
-                        Text("(\(agent.ratingCount))")
+                        Text("(\(agent.ratingCount ?? 0))")
                             .font(RaccoonTypography.caption)
                             .foregroundStyle(textTertiary)
                     }
@@ -246,7 +246,7 @@ public struct MarketplaceView: View {
                     Image(systemName: "bubble.left.and.bubble.right")
                         .font(.system(size: 10))
                         .foregroundStyle(textTertiary)
-                    Text("\(agent.usageCount)")
+                    Text("\(agent.usageCount ?? 0)")
                         .font(RaccoonTypography.caption)
                         .foregroundStyle(textTertiary)
                 }

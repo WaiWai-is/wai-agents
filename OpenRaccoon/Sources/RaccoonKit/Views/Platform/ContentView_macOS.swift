@@ -127,7 +127,17 @@ public struct ContentView_macOS: View {
             switch selectedDestination {
             case .chats:
                 if let conversationID = appState.selectedConversationID {
-                    ConversationDetailView(conversationID: conversationID)
+                    let conversation = appState.conversationStore.conversation(byID: conversationID)
+                    if conversation?.type == .agent {
+                        AgentChatView(
+                            conversationID: conversationID,
+                            agentName: conversation?.title ?? "Agent"
+                        )
+                        .id(conversationID)
+                    } else {
+                        ConversationDetailView(conversationID: conversationID)
+                            .id(conversationID)
+                    }
                 } else {
                     EmptyStateView()
                 }

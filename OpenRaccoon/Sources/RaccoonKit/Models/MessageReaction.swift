@@ -5,7 +5,7 @@ public struct MessageReaction: Codable, Identifiable, Sendable, Equatable {
     public let messageID: String
     public let userID: String
     public let emoji: String
-    public let createdAt: Date
+    public let createdAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case id

@@ -75,7 +75,7 @@ defmodule RaccoonAgents.AgentProcess do
 
   @impl true
   def handle_call({:execute, messages, config}, _from, state) do
-    {:ok, pid} =
+    result =
       AgentExecutor.execute(
         state.conversation_id,
         state.agent_id,
@@ -85,11 +85,14 @@ defmodule RaccoonAgents.AgentProcess do
       )
 
     state = %{state |
-      execution_pid: pid,
+      execution_pid: case result do
+        {:ok, pid} -> pid
+        _ -> state.execution_pid
+      end,
       last_activity: System.monotonic_time(:millisecond)
     }
 
-    {:reply, {:ok, pid}, state, @idle_timeout}
+    {:reply, result, state, @idle_timeout}
   end
 
   @impl true
