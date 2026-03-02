@@ -50,9 +50,7 @@ defmodule RaccoonAgents.GRPCClient do
       request = build_request(params)
 
       try do
-        stream = AgentService.Stub.execute_agent(channel, request)
-
-        case GRPC.Stub.recv(stream) do
+        case AgentService.Stub.execute_agent(channel, request) do
           {:ok, enum} ->
             {:ok, enum, channel}
 
