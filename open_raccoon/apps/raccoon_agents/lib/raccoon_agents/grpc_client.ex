@@ -116,16 +116,18 @@ defmodule RaccoonAgents.GRPCClient do
   `AgentExecutor.broadcast_event/3`.
   """
   @spec response_to_event(Raccoon.Agent.V1.AgentResponse.t()) :: map()
-  def response_to_event(%{token: %{text: text}} = _resp) when text != nil do
+  def response_to_event(%{event: {:token, %{text: text}}}) when text != nil do
     %{type: "token", text: text}
   end
 
-  def response_to_event(%{status: %{message: message, category: category}})
+  def response_to_event(%{event: {:status, %{message: message, category: category}}})
       when message != nil do
     %{type: "status", message: message, category: category}
   end
 
-  def response_to_event(%{tool_call: %{tool_call_id: id, tool_name: name, arguments: args}})
+  def response_to_event(%{
+        event: {:tool_call, %{tool_call_id: id, tool_name: name, arguments: args}}
+      })
       when id != nil do
     %{
       type: "tool_call",
@@ -136,13 +138,15 @@ defmodule RaccoonAgents.GRPCClient do
   end
 
   def response_to_event(%{
-        tool_result: %{
-          tool_call_id: id,
-          tool_name: name,
-          success: success,
-          output: output,
-          error_message: error_msg
-        }
+        event:
+          {:tool_result,
+           %{
+             tool_call_id: id,
+             tool_name: name,
+             success: success,
+             output: output,
+             error_message: error_msg
+           }}
       })
       when id != nil do
     %{
@@ -154,17 +158,15 @@ defmodule RaccoonAgents.GRPCClient do
     }
   end
 
-  def response_to_event(%{code_block: %{language: lang, code: code}}) when code != nil do
+  def response_to_event(%{event: {:code_block, %{language: lang, code: code}}})
+      when code != nil do
     %{type: "code_block", language: lang, code: code}
   end
 
   def response_to_event(%{
-        approval_request: %{
-          approval_id: id,
-          tool_name: name,
-          arguments: args,
-          reason: _reason
-        }
+        event:
+          {:approval_request,
+           %{approval_id: id, tool_name: name, arguments: args, reason: _reason}}
       })
       when id != nil do
     %{
@@ -177,12 +179,9 @@ defmodule RaccoonAgents.GRPCClient do
   end
 
   def response_to_event(%{
-        complete: %{
-          input_tokens: input,
-          output_tokens: output,
-          model: model,
-          stop_reason: stop
-        }
+        event:
+          {:complete,
+           %{input_tokens: input, output_tokens: output, model: model, stop_reason: stop}}
       })
       when model != nil do
     %{
@@ -194,7 +193,8 @@ defmodule RaccoonAgents.GRPCClient do
     }
   end
 
-  def response_to_event(%{error: %{code: code, message: message}}) when code != nil do
+  def response_to_event(%{event: {:error, %{code: code, message: message}}})
+      when code != nil do
     %{type: "error", code: code, message: message}
   end
 
