@@ -72,10 +72,6 @@ defmodule RaccoonAgents.AgentExecutor do
     with :ok <- check_agent_visibility(state.agent_id, state.user_id),
          # 2. Check cost limit before execution
          :ok <- CostTracker.check_limit(state.user_id) do
-      Logger.info("[exec] Passed checks, connecting to gRPC",
-        conversation_id: state.conversation_id
-      )
-
       broadcast(topic, "status", %{
         message: "connecting to agent runtime...",
         category: "thinking"
@@ -97,21 +93,13 @@ defmodule RaccoonAgents.AgentExecutor do
         user_api_key: Map.get(config, :user_api_key, Map.get(config, "user_api_key", ""))
       }
 
-      Logger.info("[exec] Calling GRPCClient.execute_agent",
-        conversation_id: state.conversation_id
-      )
-
       case GRPCClient.execute_agent(request_params) do
         {:ok, event_stream, channel} ->
-          Logger.info("[exec] Got stream, consuming events",
-            conversation_id: state.conversation_id
-          )
-
           consume_stream(event_stream, topic, state, channel)
           GRPC.Stub.disconnect(channel)
 
         {:error, reason} ->
-          Logger.error("[exec] gRPC execute_agent failed: #{inspect(reason)}",
+          Logger.error("gRPC connection failed: #{inspect(reason)}",
             conversation_id: state.conversation_id
           )
 
@@ -159,7 +147,7 @@ defmodule RaccoonAgents.AgentExecutor do
           end
 
         {:error, error}, acc ->
-          Logger.error("[exec] gRPC stream error: #{inspect(error)}",
+          Logger.error("gRPC stream error: #{inspect(error)}",
             conversation_id: state.conversation_id
           )
 
@@ -200,7 +188,7 @@ defmodule RaccoonAgents.AgentExecutor do
       from(c in "conversations", where: c.id == ^conversation_id_bin)
       |> Repo.update_all(set: [last_message_at: now, updated_at: now])
 
-      Logger.info("[exec] Saved agent response",
+      Logger.info("Saved agent response",
         conversation_id: state.conversation_id
       )
     end
