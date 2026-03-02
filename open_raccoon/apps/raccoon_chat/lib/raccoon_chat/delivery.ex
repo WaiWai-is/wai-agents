@@ -110,7 +110,7 @@ defmodule RaccoonChat.Delivery do
       |> Repo.all()
       |> Enum.map(fn msg ->
         %{
-          role: if(msg.sender_type == "human", do: "user", else: "assistant"),
+          role: if(msg.sender_type == :human, do: "user", else: "assistant"),
           content: Map.get(msg.content, "text", ""),
           message_id: msg.id
         }

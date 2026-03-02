@@ -77,11 +77,19 @@ defmodule RaccoonAgents.AgentExecutor do
         category: "thinking"
       })
 
+      # Load agent to include mcp_servers and execution_mode in the gRPC config
+      agent = Repo.get!(Agent, state.agent_id)
+
+      enriched_config =
+        config
+        |> Map.put(:mcp_servers, agent.mcp_servers || [])
+        |> Map.put(:execution_mode, to_string(agent.execution_mode || :raw))
+
       request_params = %{
         conversation_id: state.conversation_id,
         agent_id: state.agent_id,
         messages: messages,
-        config: config,
+        config: enriched_config,
         user_api_key: Map.get(config, :user_api_key, Map.get(config, "user_api_key", ""))
       }
 
@@ -132,13 +140,17 @@ defmodule RaccoonAgents.AgentExecutor do
   defp consume_stream(event_stream, topic, state, channel) do
     task =
       Task.async(fn ->
-        event_stream
-        |> Stream.each(fn
-          {:ok, response} ->
+        Enum.reduce(event_stream, [], fn
+          {:ok, response}, tokens_acc ->
             event = GRPCClient.response_to_event(response)
             broadcast_event(topic, event, state)
 
-          {:error, error} ->
+            case event do
+              %{type: "token", text: text} -> [text | tokens_acc]
+              _ -> tokens_acc
+            end
+
+          {:error, error}, tokens_acc ->
             Logger.error("gRPC stream error",
               conversation_id: state.conversation_id,
               error: inspect(error)
@@ -148,16 +160,17 @@ defmodule RaccoonAgents.AgentExecutor do
               code: "stream_error",
               message: "Agent stream error: #{inspect(error)}"
             })
+
+            tokens_acc
         end)
-        |> Stream.run()
       end)
 
     case Task.yield(task, @stream_timeout) || Task.shutdown(task) do
-      {:ok, _result} ->
+      {:ok, tokens_acc} ->
+        save_agent_response(tokens_acc, state)
         :ok
 
       nil ->
-        # Disconnect the gRPC channel to signal cancellation to the Python runtime
         GRPC.Stub.disconnect(channel)
 
         Logger.error("Agent execution timed out, sent cancellation signal",
@@ -170,6 +183,44 @@ defmodule RaccoonAgents.AgentExecutor do
         })
 
         :timed_out
+    end
+  end
+
+  defp save_agent_response(tokens_acc, state) do
+    text = tokens_acc |> Enum.reverse() |> Enum.join("")
+
+    if String.trim(text) != "" do
+      now = DateTime.utc_now()
+
+      %RaccoonChat.Message{}
+      |> Ecto.Changeset.change(%{
+        conversation_id: state.conversation_id,
+        sender_id: nil,
+        sender_type: :agent,
+        type: :text,
+        content: %{"text" => text},
+        metadata: %{"agent_id" => state.agent_id}
+      })
+      |> Repo.insert()
+      |> case do
+        {:ok, message} ->
+          # Update conversation's last_message_at
+          from(c in RaccoonChat.Conversation, where: c.id == ^state.conversation_id)
+          |> Repo.update_all(set: [last_message_at: now, updated_at: now])
+
+          # Broadcast so conversation list updates for other members
+          Phoenix.PubSub.broadcast(
+            RaccoonGateway.PubSub,
+            "conversation:#{state.conversation_id}",
+            {:new_message, message}
+          )
+
+        {:error, changeset} ->
+          Logger.error("Failed to save agent response",
+            conversation_id: state.conversation_id,
+            error: inspect(changeset.errors)
+          )
+      end
     end
   end
 
