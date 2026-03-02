@@ -56,6 +56,7 @@ defmodule RaccoonGateway.MixProject do
       {:raccoon_agents, in_umbrella: true},
       {:raccoon_pages, in_umbrella: true},
       {:raccoon_bridges, in_umbrella: true},
+      {:raccoon_integrations, in_umbrella: true},
       {:raccoon_feed, in_umbrella: true},
       {:hammer, "~> 7.0"},
       {:cors_plug, "~> 3.0"},

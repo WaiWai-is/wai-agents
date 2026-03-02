@@ -103,11 +103,36 @@ defmodule RaccoonGatewayWeb.Router do
     get "/marketplace/agents/:slug", MarketplaceController, :agent_profile
     post "/marketplace/agents/:id/rate", MarketplaceController, :rate
     get "/marketplace/search", MarketplaceController, :search
+
+    # Agent schedules
+    get "/agents/:agent_id/schedules", ScheduleController, :index
+    post "/agents/:agent_id/schedules", ScheduleController, :create
+    get "/agents/:agent_id/schedules/:id", ScheduleController, :show
+    patch "/agents/:agent_id/schedules/:id", ScheduleController, :update
+    delete "/agents/:agent_id/schedules/:id", ScheduleController, :delete
+
+    # Integrations
+    get "/integrations", IntegrationController, :index
+    get "/integrations/:service/authorize", IntegrationController, :authorize
+    delete "/integrations/:service", IntegrationController, :disconnect
+    get "/integrations/:service/status", IntegrationController, :status
+
+    # Channel routes
+    get "/agents/:agent_id/channels", ChannelController, :index
+    post "/agents/:agent_id/channels", ChannelController, :create
+    delete "/agents/:agent_id/channels/:id", ChannelController, :delete
   end
 
   # Magic link trampoline — browser GET redirects to app's custom URL scheme
   scope "/auth", RaccoonGatewayWeb do
     get "/magic-link/verify", AuthController, :magic_link_trampoline
+  end
+
+  # OAuth callbacks (no auth, state token verifies user)
+  scope "/api/v1", RaccoonGatewayWeb do
+    pipe_through :api
+
+    get "/integrations/callback/:service", IntegrationController, :callback
   end
 
   # Webhook endpoints (no auth, verified by platform signature)
@@ -117,5 +142,6 @@ defmodule RaccoonGatewayWeb.Router do
     post "/telegram", WebhookController, :telegram
     post "/whatsapp", WebhookController, :whatsapp
     get "/whatsapp", WebhookController, :whatsapp_verify
+    post "/:service/:webhook_id", WebhookController, :generic
   end
 end

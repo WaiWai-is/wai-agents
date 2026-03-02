@@ -25,6 +25,11 @@ defmodule RaccoonAgents.Agent do
     field(:usage_count, :integer, default: 0)
     field(:rating_sum, :integer, default: 0)
     field(:rating_count, :integer, default: 0)
+    field(:execution_mode, Ecto.Enum,
+      values: [:raw, :claude_sdk, :openai_sdk],
+      default: :raw
+    )
+
     field(:metadata, :map, default: %{})
 
     has_many(:ratings, RaccoonAgents.AgentRating)
@@ -48,6 +53,7 @@ defmodule RaccoonAgents.Agent do
       :mcp_servers,
       :visibility,
       :category,
+      :execution_mode,
       :metadata
     ])
     |> validate_required([:creator_id, :name, :slug, :system_prompt])

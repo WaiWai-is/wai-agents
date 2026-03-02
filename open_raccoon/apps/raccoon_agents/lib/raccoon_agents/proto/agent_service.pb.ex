@@ -132,6 +132,58 @@ defmodule Raccoon.Agent.V1.CompleteEvent do
   field(:stop_reason, 4, type: :string, json_name: "stopReason")
 end
 
+defmodule Raccoon.Agent.V1.ApprovalDecision do
+  @moduledoc false
+  use Protobuf, protoc_gen_elixir_version: "0.13.0", syntax: :proto3
+
+  field(:conversation_id, 1, type: :string, json_name: "conversationId")
+  field(:request_id, 2, type: :string, json_name: "requestId")
+  field(:approved, 3, type: :bool)
+  field(:scope, 4, type: :string)
+end
+
+defmodule Raccoon.Agent.V1.ApprovalAck do
+  @moduledoc false
+  use Protobuf, protoc_gen_elixir_version: "0.13.0", syntax: :proto3
+
+  field(:accepted, 1, type: :bool)
+  field(:error, 2, type: :string)
+end
+
+defmodule Raccoon.Agent.V1.MCPServerConfig.EnvEntry do
+  @moduledoc false
+  use Protobuf, map: true, protoc_gen_elixir_version: "0.13.0", syntax: :proto3
+
+  field(:key, 1, type: :string)
+  field(:value, 2, type: :string)
+end
+
+defmodule Raccoon.Agent.V1.MCPServerConfig.HeadersEntry do
+  @moduledoc false
+  use Protobuf, map: true, protoc_gen_elixir_version: "0.13.0", syntax: :proto3
+
+  field(:key, 1, type: :string)
+  field(:value, 2, type: :string)
+end
+
+defmodule Raccoon.Agent.V1.MCPServerConfig do
+  @moduledoc false
+  use Protobuf, protoc_gen_elixir_version: "0.13.0", syntax: :proto3
+
+  field(:name, 1, type: :string)
+  field(:transport, 2, type: :string)
+  field(:command, 3, type: :string)
+  field(:args, 4, repeated: true, type: :string)
+  field(:url, 5, type: :string)
+  field(:env, 6, repeated: true, type: Raccoon.Agent.V1.MCPServerConfig.EnvEntry, map: true)
+
+  field(:headers, 7,
+    repeated: true,
+    type: Raccoon.Agent.V1.MCPServerConfig.HeadersEntry,
+    map: true
+  )
+end
+
 defmodule Raccoon.Agent.V1.AgentConfig do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.13.0", syntax: :proto3
@@ -143,6 +195,13 @@ defmodule Raccoon.Agent.V1.AgentConfig do
   field(:max_tokens, 5, type: :int32, json_name: "maxTokens")
   field(:tools, 6, repeated: true, type: Raccoon.Agent.V1.ToolConfig)
   field(:visibility, 7, type: :string)
+  field(:execution_mode, 8, type: :string, json_name: "executionMode")
+
+  field(:mcp_servers, 9,
+    repeated: true,
+    type: Raccoon.Agent.V1.MCPServerConfig,
+    json_name: "mcpServers"
+  )
 end
 
 defmodule Raccoon.Agent.V1.ToolConfig do
@@ -300,6 +359,12 @@ defmodule Raccoon.Agent.V1.AgentService.Service do
     :ValidateTools,
     Raccoon.Agent.V1.ValidateToolsRequest,
     Raccoon.Agent.V1.ValidateToolsResponse
+  )
+
+  rpc(
+    :SubmitApproval,
+    Raccoon.Agent.V1.ApprovalDecision,
+    Raccoon.Agent.V1.ApprovalAck
   )
 end
 

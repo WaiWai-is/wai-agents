@@ -22,6 +22,7 @@ defmodule OpenRaccoon.MixProject do
           raccoon_feed: :permanent,
           raccoon_bridges: :permanent,
           raccoon_pages: :permanent,
+          raccoon_integrations: :permanent,
           raccoon_gateway: :permanent
         ]
       ]
@@ -34,6 +35,10 @@ defmodule OpenRaccoon.MixProject do
   #
   # Run "mix help deps" for examples and options.
   defp deps do
-    []
+    [
+      {:pgvector, "~> 0.3"},
+      {:crontab, "~> 1.1"},
+      {:stripity_stripe, "~> 3.0"}
+    ]
   end
 end

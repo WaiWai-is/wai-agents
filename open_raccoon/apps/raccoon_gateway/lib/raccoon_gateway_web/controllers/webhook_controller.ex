@@ -39,4 +39,29 @@ defmodule RaccoonGatewayWeb.WebhookController do
       send_resp(conn, 403, "Forbidden")
     end
   end
+
+  @doc """
+  Generic webhook endpoint for all integrations.
+  Verifies signature, normalizes event, and routes to channel router.
+  Always returns 200 to avoid retries from the platform.
+  """
+  def generic(conn, %{"service" => service, "webhook_id" => webhook_id}) do
+    headers =
+      conn.req_headers
+      |> Enum.into(%{})
+
+    body =
+      case conn.assigns[:raw_body] do
+        nil -> Jason.encode!(conn.params)
+        raw -> raw
+      end
+
+    case RaccoonIntegrations.WebhookHandler.verify_and_process(service, webhook_id, headers, body) do
+      {:ok, _} -> send_resp(conn, 200, "ok")
+      {:error, :invalid_signature} -> send_resp(conn, 401, "Unauthorized")
+      {:error, :webhook_not_found} -> send_resp(conn, 404, "Not Found")
+      {:error, :webhook_disabled} -> send_resp(conn, 200, "ok")
+      {:error, _} -> send_resp(conn, 200, "ok")
+    end
+  end
 end

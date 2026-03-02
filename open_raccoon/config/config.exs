@@ -30,7 +30,10 @@ config :raccoon_shared, Oban,
         args: %{"task" => "cleanup_sessions"}},
        {"0 5 * * *", RaccoonGateway.Workers.MaintenanceWorker,
         args: %{"task" => "prune_delivery_receipts"}},
-       {"*/15 * * * *", RaccoonGateway.Workers.TrendingWorker}
+       {"*/15 * * * *", RaccoonGateway.Workers.TrendingWorker},
+       {"*/1 * * * *", RaccoonGateway.Workers.AgentScheduleWorker,
+        args: %{"task" => "scan"}},
+       {"0 2 * * *", RaccoonGateway.Workers.MemoryDecayWorker}
      ]}
   ]
 

@@ -9,7 +9,14 @@ defmodule RaccoonAgents.GRPCClient do
 
   require Logger
 
-  alias Raccoon.Agent.V1.{AgentRequest, AgentConfig, Message, AgentService}
+  alias Raccoon.Agent.V1.{
+    AgentRequest,
+    AgentConfig,
+    Message,
+    AgentService,
+    ApprovalDecision,
+    MCPServerConfig
+  }
 
   @default_addr "localhost:50051"
   @connect_timeout 5_000
@@ -55,6 +62,31 @@ defmodule RaccoonAgents.GRPCClient do
           GRPC.Stub.disconnect(channel)
           {:error, reason}
       end
+    end
+  end
+
+  @doc """
+  Send an approval decision to the Python sidecar via the SubmitApproval RPC.
+
+  Returns `{:ok, ack}` or `{:error, reason}`.
+  """
+  def submit_approval(conversation_id, request_id, approved, scope) do
+    case connect() do
+      {:ok, channel} ->
+        request =
+          %ApprovalDecision{
+            conversation_id: to_string(conversation_id),
+            request_id: to_string(request_id),
+            approved: approved,
+            scope: to_string(scope)
+          }
+
+        result = AgentService.Stub.submit_approval(channel, request)
+        GRPC.Stub.disconnect(channel)
+        result
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -184,13 +216,19 @@ defmodule RaccoonAgents.GRPCClient do
           nil
 
         cfg when is_map(cfg) ->
+          mcp_servers =
+            (Map.get(cfg, :mcp_servers, Map.get(cfg, "mcp_servers")) || [])
+            |> Enum.map(&build_mcp_server_config/1)
+
           %AgentConfig{
             agent_id: Map.get(cfg, :agent_id, Map.get(cfg, "agent_id", "")),
             system_prompt: Map.get(cfg, :system_prompt, Map.get(cfg, "system_prompt", "")),
             model: Map.get(cfg, :model, Map.get(cfg, "model", "")),
             temperature: to_float(Map.get(cfg, :temperature, Map.get(cfg, "temperature", 0.7))),
             max_tokens: Map.get(cfg, :max_tokens, Map.get(cfg, "max_tokens", 4096)),
-            visibility: Map.get(cfg, :visibility, Map.get(cfg, "visibility", "private"))
+            visibility: Map.get(cfg, :visibility, Map.get(cfg, "visibility", "private")),
+            execution_mode: Map.get(cfg, :execution_mode, Map.get(cfg, "execution_mode", "raw")),
+            mcp_servers: mcp_servers
           }
       end
 
@@ -201,6 +239,18 @@ defmodule RaccoonAgents.GRPCClient do
       config: config,
       user_api_key: Map.get(params, :user_api_key, ""),
       request_id: Map.get(params, :request_id, "")
+    }
+  end
+
+  defp build_mcp_server_config(server) when is_map(server) do
+    %MCPServerConfig{
+      name: Map.get(server, "name", Map.get(server, :name, "")),
+      transport: Map.get(server, "transport", Map.get(server, :transport, "stdio")),
+      command: Map.get(server, "command", Map.get(server, :command, "")),
+      args: Map.get(server, "args", Map.get(server, :args, [])),
+      url: Map.get(server, "url", Map.get(server, :url, "")),
+      env: Map.get(server, "env", Map.get(server, :env, %{})),
+      headers: Map.get(server, "headers", Map.get(server, :headers, %{}))
     }
   end
 

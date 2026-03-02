@@ -29,7 +29,9 @@ defmodule RaccoonAgents.MixProject do
       {:grpc, "~> 0.9"},
       {:protobuf, "~> 0.14"},
       {:phoenix_pubsub, "~> 2.1"},
-      {:jason, "~> 1.4"}
+      {:jason, "~> 1.4"},
+      {:pgvector, "~> 0.3"},
+      {:crontab, "~> 1.1"}
     ]
   end
 end

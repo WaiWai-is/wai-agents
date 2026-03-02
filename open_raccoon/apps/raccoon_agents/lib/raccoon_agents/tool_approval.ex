@@ -18,6 +18,9 @@ defmodule RaccoonAgents.ToolApproval do
 
   require Logger
 
+  alias RaccoonShared.Repo
+  alias RaccoonAgents.ToolApprovalRecord
+
   @type scope :: :allow_once | :allow_for_session | :always_for_agent_tool
   @type decision :: :approved | :denied | :revoked | :pending
 
@@ -51,6 +54,22 @@ defmodule RaccoonAgents.ToolApproval do
 
     # Persist to ETS for fast in-memory lookups
     RaccoonAgents.ToolApproval.Store.insert(entry)
+
+    # Persist always_for_agent_tool decisions to the database so they survive restarts
+    if entry.scope == :always_for_agent_tool and entry.agent_id != nil do
+      %ToolApprovalRecord{}
+      |> ToolApprovalRecord.changeset(%{
+        user_id: entry.actor_user_id,
+        agent_id: entry.agent_id,
+        conversation_id: entry.conversation_id,
+        tool_name: entry.tool_name,
+        scope: to_string(entry.scope),
+        decision: to_string(entry.decision),
+        arguments_hash: entry.arguments_hash,
+        decided_at: entry.decided_at
+      })
+      |> Repo.insert()
+    end
 
     {:ok, entry}
   end
@@ -86,6 +105,17 @@ defmodule RaccoonAgents.ToolApproval do
 
     # Remove remembered approval from ETS
     RaccoonAgents.ToolApproval.Store.delete(user_id, agent_id, tool_name)
+
+    # Update the DB record to reflect revocation
+    import Ecto.Query
+
+    from(r in ToolApprovalRecord,
+      where:
+        r.user_id == ^user_id and r.agent_id == ^agent_id and
+          r.tool_name == ^tool_name and r.scope == "always_for_agent_tool" and
+          r.decision == "approved"
+    )
+    |> Repo.update_all(set: [decision: "revoked", updated_at: DateTime.utc_now()])
 
     # Record the revocation itself for audit
     record_decision(%{

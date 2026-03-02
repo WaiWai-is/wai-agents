@@ -21,7 +21,7 @@ defmodule RaccoonGatewayWeb.AgentChannel do
 
   use RaccoonGatewayWeb, :channel
 
-  alias RaccoonAgents.ToolApproval
+  alias RaccoonAgents.{GRPCClient, ToolApproval}
 
   @impl true
   def join("agent:" <> conversation_id, _params, socket) do
@@ -56,6 +56,14 @@ defmodule RaccoonGatewayWeb.AgentChannel do
       arguments_hash: nil,
       decision: decision_atom
     })
+
+    # Forward approval decision to Python sidecar via SubmitApproval RPC
+    GRPCClient.submit_approval(
+      conversation_id,
+      request_id,
+      decision_atom == :approved,
+      scope_atom
+    )
 
     event = if decision == "approve", do: "approval_granted", else: "approval_denied"
 
