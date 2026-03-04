@@ -43,6 +43,7 @@ function mockSql(rows: unknown[] = [], count = 0): any {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  process.env.INTERNAL_API_KEY = 'test-internal-key';
   vi.mocked(sql).mockReturnValue(mockSql([], 1));
   mockFetch.mockResolvedValue({
     ok: true,
@@ -205,10 +206,14 @@ describe('handleSendToAgent', () => {
   });
 
   it('uses existing conversation when found', async () => {
-    // First call returns existing conversation, subsequent calls succeed
+    // Flow: get caller name, find existing conv, insert message, insert task, update task→working, update task→completed
     vi.mocked(sql)
-      .mockReturnValueOnce(mockSql([{ id: CONV_ID }], 1))  // find existing
-      .mockReturnValueOnce(mockSql([], 1));                  // insert message
+      .mockReturnValueOnce(mockSql([{ name: 'TestAgent' }], 1))  // get caller name
+      .mockReturnValueOnce(mockSql([{ id: CONV_ID }], 1))        // find existing conv
+      .mockReturnValueOnce(mockSql([], 1))                        // insert message
+      .mockReturnValueOnce(mockSql([], 1))                        // insert task
+      .mockReturnValueOnce(mockSql([], 1))                        // update task→working
+      .mockReturnValueOnce(mockSql([], 1));                       // update task→completed
 
     const result = await handleSendToAgent({
       from_agent_id: AGENT_ID_1,
@@ -219,16 +224,20 @@ describe('handleSendToAgent', () => {
 
     expect(result.conversation_id).toBe(CONV_ID);
     expect(result.response).toBe('Agent reply');
-    expect(sql).toHaveBeenCalledTimes(2);
+    expect(sql).toHaveBeenCalledTimes(6);
   });
 
   it('creates new conversation when none exists', async () => {
-    // No existing conversation, then insert conversation, insert members, insert message
+    // Flow: get caller name, no existing conv, create conv, insert members, insert msg, insert task, update→working, update→completed
     vi.mocked(sql)
-      .mockReturnValueOnce(mockSql([], 0))   // no existing conversation
-      .mockReturnValueOnce(mockSql([], 1))   // create conversation
-      .mockReturnValueOnce(mockSql([], 2))   // insert members
-      .mockReturnValueOnce(mockSql([], 1));  // insert message
+      .mockReturnValueOnce(mockSql([{ name: 'TestAgent' }], 1))  // get caller name
+      .mockReturnValueOnce(mockSql([], 0))                        // no existing conv
+      .mockReturnValueOnce(mockSql([], 1))                        // create conversation
+      .mockReturnValueOnce(mockSql([], 2))                        // insert members
+      .mockReturnValueOnce(mockSql([], 1))                        // insert message
+      .mockReturnValueOnce(mockSql([], 1))                        // insert task
+      .mockReturnValueOnce(mockSql([], 1))                        // update task→working
+      .mockReturnValueOnce(mockSql([], 1));                       // update task→completed
 
     const result = await handleSendToAgent({
       from_agent_id: AGENT_ID_1,
@@ -239,13 +248,17 @@ describe('handleSendToAgent', () => {
 
     expect(result.conversation_id).toBe('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
     expect(result.response).toBe('Agent reply');
-    expect(sql).toHaveBeenCalledTimes(4);
+    expect(sql).toHaveBeenCalledTimes(8);
   });
 
   it('increments a2a_depth in API call', async () => {
     vi.mocked(sql)
-      .mockReturnValueOnce(mockSql([{ id: CONV_ID }], 1))
-      .mockReturnValueOnce(mockSql([], 1));
+      .mockReturnValueOnce(mockSql([{ name: 'TestAgent' }], 1))  // get caller name
+      .mockReturnValueOnce(mockSql([{ id: CONV_ID }], 1))        // find existing conv
+      .mockReturnValueOnce(mockSql([], 1))                        // insert message
+      .mockReturnValueOnce(mockSql([], 1))                        // insert task
+      .mockReturnValueOnce(mockSql([], 1))                        // update task→working
+      .mockReturnValueOnce(mockSql([], 1));                       // update task→completed
 
     await handleSendToAgent({
       from_agent_id: AGENT_ID_1,
@@ -261,13 +274,18 @@ describe('handleSendToAgent', () => {
 
   it('throws when API call fails', async () => {
     vi.mocked(sql)
-      .mockReturnValueOnce(mockSql([{ id: CONV_ID }], 1))
-      .mockReturnValueOnce(mockSql([], 1));
+      .mockReturnValueOnce(mockSql([{ name: 'TestAgent' }], 1))  // get caller name
+      .mockReturnValueOnce(mockSql([{ id: CONV_ID }], 1))        // find existing conv
+      .mockReturnValueOnce(mockSql([], 1))                        // insert message
+      .mockReturnValueOnce(mockSql([], 1))                        // insert task
+      .mockReturnValueOnce(mockSql([], 1))                        // update task→working
+      .mockReturnValueOnce(mockSql([], 1));                       // update task→failed
 
     mockFetch.mockResolvedValue({
       ok: false,
       status: 500,
       statusText: 'Internal Server Error',
+      text: async () => 'Internal Server Error',
     });
 
     await expect(

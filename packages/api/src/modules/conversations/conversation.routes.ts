@@ -194,13 +194,35 @@ conversationRoutes.post('/:id/messages/:messageId/feedback', authMiddleware, asy
     return c.json({ error: 'Validation error', details: parsed.error.flatten() }, 422);
   }
 
-  // Get the agent_id from the conversation
+  // Verify user is a member of this conversation
+  const memberRows = await sql`
+    SELECT id FROM conversation_members
+    WHERE conversation_id = ${conversationId} AND user_id = ${userId}
+    LIMIT 1
+  `;
+  if (memberRows.length === 0) {
+    return c.json({ error: 'Not found', message: 'Conversation not found or access denied' }, 404);
+  }
+
+  // Get the agent_id from the conversation and verify message exists in it
   const convRows = await sql`
-    SELECT agent_id FROM conversations WHERE id = ${conversationId} AND agent_id IS NOT NULL LIMIT 1
+    SELECT c.agent_id FROM conversations c
+    WHERE c.id = ${conversationId} AND c.agent_id IS NOT NULL
+    LIMIT 1
   `;
   if (convRows.length === 0) {
     return c.json({ error: 'Not found', message: 'Agent conversation not found' }, 404);
   }
+
+  const msgRows = await sql`
+    SELECT id FROM messages
+    WHERE id = ${messageId} AND conversation_id = ${conversationId} AND sender_type = 'agent'
+    LIMIT 1
+  `;
+  if (msgRows.length === 0) {
+    return c.json({ error: 'Not found', message: 'Agent message not found in this conversation' }, 404);
+  }
+
   const agentId = (convRows[0] as Record<string, unknown>)['agent_id'] as string;
 
   const result = await submitMessageFeedback(
@@ -212,7 +234,19 @@ conversationRoutes.post('/:id/messages/:messageId/feedback', authMiddleware, asy
 
 // GET /:id/should-prompt-feedback — check if we should ask for feedback
 conversationRoutes.get('/:id/should-prompt-feedback', authMiddleware, async (c) => {
+  const userId = c.get('userId');
   const conversationId = c.req.param('id');
+
+  // Verify user is a member of this conversation
+  const memberRows = await sql`
+    SELECT id FROM conversation_members
+    WHERE conversation_id = ${conversationId} AND user_id = ${userId}
+    LIMIT 1
+  `;
+  if (memberRows.length === 0) {
+    return c.json({ error: 'Not found', message: 'Conversation not found or access denied' }, 404);
+  }
+
   const shouldPrompt = await shouldPromptFeedback(conversationId);
   return c.json({ should_prompt: shouldPrompt }, 200);
 });

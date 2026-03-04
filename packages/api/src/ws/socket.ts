@@ -16,9 +16,11 @@ export function createSocketServer(httpServer: HttpServer): SocketIOServer {
     path: '/socket.io',
   });
 
-  const jwtSecret = new TextEncoder().encode(
-    process.env.JWT_SECRET || 'dev-secret-change-in-production',
-  );
+  const jwtSecretValue = process.env.JWT_SECRET || (() => {
+    if (process.env.NODE_ENV === 'production') throw new Error('JWT_SECRET must be set in production');
+    return 'dev-secret-change-in-production';
+  })();
+  const jwtSecret = new TextEncoder().encode(jwtSecretValue);
 
   io.use(async (socket, next) => {
     const token = socket.handshake.auth?.token as string | undefined;

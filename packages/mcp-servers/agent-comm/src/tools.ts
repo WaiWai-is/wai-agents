@@ -134,7 +134,8 @@ export async function handleSendToAgent(
 
   // Trigger target agent execution via main API with timeout
   const apiPort = process.env.API_PORT || 4000;
-  const internalKey = process.env.INTERNAL_API_KEY || 'dev-internal-key';
+  const internalKey = process.env.INTERNAL_API_KEY;
+  if (!internalKey) throw new Error('INTERNAL_API_KEY environment variable must be set');
   const startTime = Date.now();
 
   // 60-second timeout

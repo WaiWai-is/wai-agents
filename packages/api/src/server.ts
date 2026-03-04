@@ -12,6 +12,7 @@ import { userRoutes } from './modules/auth/user.routes.js';
 import { createSocketServer } from './ws/index.js';
 import { initWorkers } from './jobs/index.js';
 import { runAgentLoop } from './modules/agents/loop.js';
+import type { CallerContext } from './modules/agents/soul.js';
 
 const app = new Hono();
 
@@ -38,24 +39,54 @@ app.route('/api/v1', uploadRoutes);
 // Internal API for agent-to-agent communication
 app.post('/api/v1/internal/agent/execute', async (c) => {
   const internalKey = c.req.header('X-Internal-Key');
-  const expectedKey = process.env.INTERNAL_API_KEY || 'dev-internal-key';
+  const expectedKey = process.env.INTERNAL_API_KEY;
+  if (!expectedKey) {
+    return c.json({ error: 'Internal API key not configured' }, 500);
+  }
   if (internalKey !== expectedKey) {
     return c.json({ error: 'Unauthorized' }, 401);
   }
 
-  const body = await c.req.json();
-  const { agentId, conversationId, message, a2aDepth, callerContext } = body;
+  let body: Record<string, unknown>;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid JSON body' }, 400);
+  }
 
-  const result = await runAgentLoop({
-    agentId,
-    conversationId,
-    userId: callerContext?.caller_agent_id ?? agentId,
-    message,
-    a2aDepth: a2aDepth ?? 0,
-    callerContext,
-  });
+  const { agentId, conversationId, message, a2aDepth, callerContext } = body as {
+    agentId: unknown; conversationId: unknown; message: unknown;
+    a2aDepth: unknown; callerContext: CallerContext | undefined;
+  };
 
-  return c.json({ response: result.response, usage: result.usage });
+  // Validate required fields
+  const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (typeof agentId !== 'string' || !uuidRe.test(agentId)) {
+    return c.json({ error: 'Invalid agentId' }, 400);
+  }
+  if (typeof message !== 'string' || message.length === 0) {
+    return c.json({ error: 'Invalid message' }, 400);
+  }
+  const depth = typeof a2aDepth === 'number' ? a2aDepth : 0;
+  if (depth >= 3) {
+    return c.json({ error: 'Maximum A2A depth exceeded' }, 400);
+  }
+
+  try {
+    const result = await runAgentLoop({
+      agentId,
+      conversationId: typeof conversationId === 'string' ? conversationId : agentId,
+      userId: callerContext?.caller_agent_id ?? agentId,
+      message,
+      a2aDepth: depth,
+      callerContext,
+    });
+
+    return c.json({ response: result.response, usage: result.usage });
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : 'Unknown error';
+    return c.json({ error: errMsg }, 500);
+  }
 });
 
 const port = Number(process.env.PORT) || 4000;

@@ -26,7 +26,11 @@ export async function hashPassword(password: string): Promise<string> {
 export async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
   // Handle argon2id hashes from the old Elixir backend
   if (storedHash.startsWith('$argon2')) {
-    return argon2.verify(storedHash, password);
+    try {
+      return await argon2.verify(storedHash, password);
+    } catch {
+      return false;
+    }
   }
 
   // Handle new scrypt hashes (salt:hash format)
@@ -34,6 +38,7 @@ export async function verifyPassword(password: string, storedHash: string): Prom
   if (!salt || !hash) return false;
   const hashBuffer = Buffer.from(hash, 'hex');
   const derivedHash = (await scryptAsync(password, salt, 64)) as Buffer;
+  if (hashBuffer.length !== derivedHash.length) return false;
   return timingSafeEqual(hashBuffer, derivedHash);
 }
 
