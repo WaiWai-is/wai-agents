@@ -227,20 +227,29 @@ public enum APIEndpoint: Sendable {
             if let agentID { body["agent_id"] = agentID }
             return try encoder.encode(body)
         case .sendMessage(_, let content, _):
-            struct SendMessageBody: Encodable {
-                let content: MessageContent
+            // API expects content as array of ContentBlock objects
+            struct ContentBlock: Encodable {
                 let type: String
+                let text: String?
+                let code: String?
+                let language: String?
+                let url: String?
+                let name: String?
             }
-            let messageType: String = if content.code != nil {
-                "code"
-            } else if content.mediaURL != nil {
-                "media"
-            } else if content.embed != nil {
-                "embed"
-            } else {
-                "text"
+            struct SendMessageBody: Encodable {
+                let content: [ContentBlock]
             }
-            return try encoder.encode(SendMessageBody(content: content, type: messageType))
+            var blocks: [ContentBlock] = []
+            if let text = content.text {
+                blocks.append(ContentBlock(type: "text", text: text, code: nil, language: nil, url: nil, name: nil))
+            }
+            if let code = content.code {
+                blocks.append(ContentBlock(type: "code_block", text: nil, code: code, language: content.language ?? "plaintext", url: nil, name: nil))
+            }
+            if let mediaURL = content.mediaURL {
+                blocks.append(ContentBlock(type: "image", text: nil, code: nil, language: nil, url: mediaURL.absoluteString, name: nil))
+            }
+            return try encoder.encode(SendMessageBody(content: blocks))
         case .addMember(_, let userID):
             return try encoder.encode(["user_id": userID])
         case .createAgent(let name, let systemPrompt, let model):

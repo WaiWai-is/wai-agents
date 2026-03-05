@@ -294,7 +294,7 @@ export async function sendMessage(
 
   await sql`
     INSERT INTO messages (id, conversation_id, sender_id, sender_type, type, content, metadata, created_at)
-    VALUES (${messageId}, ${conversationId}, ${userId}, 'user', 'text', ${contentJson}::jsonb, '{}', ${now})
+    VALUES (${messageId}, ${conversationId}, ${userId}, 'human', 'text', ${contentJson}::jsonb, '{}', ${now})
   `;
 
   // Update conversation last_message_at
