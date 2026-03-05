@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { db, sql } from '../../db/connection.js';
-import { agents, agentUsageLogs } from '../../db/schema/agents.js';
+import { agents } from '../../db/schema/agents.js';
 import { messages } from '../../db/schema/conversations.js';
 import { eq, desc } from 'drizzle-orm';
 import { emitAgentEvent } from '../../ws/emitter.js';
@@ -147,24 +147,25 @@ export async function runAgentLoop(config: AgentLoopConfig): Promise<AgentLoopRe
 
     // 7. Save agent response as a message in the conversation
     const messageId = randomUUID();
-    await db.insert(messages).values({
-      id: messageId,
-      conversationId,
-      senderId: agentId,
-      senderType: 'agent',
-      type: 'text',
-      content: [{ type: 'text', text: fullResponse }],
-      createdAt: new Date(),
-    });
+    const now = new Date().toISOString();
+    const contentJson = JSON.stringify([{ type: 'text', text: fullResponse }]);
+    await sql`
+      INSERT INTO messages (id, conversation_id, sender_id, sender_type, type, content, metadata, created_at)
+      VALUES (${messageId}, ${conversationId}, ${agentId}, 'agent', 'text', ${contentJson}::jsonb, '{}', ${now})
+    `;
+
+    // Update conversation last_message_at
+    await sql`
+      UPDATE conversations SET last_message_at = ${now}, updated_at = NOW()
+      WHERE id = ${conversationId}
+    `;
 
     // 8. Track usage in agent_usage_logs
-    await db.insert(agentUsageLogs).values({
-      userId,
-      agentId,
-      model: agent.model ?? 'claude-sonnet-4-6',
-      inputTokens: totalInputTokens,
-      outputTokens: totalOutputTokens,
-    });
+    const usageModel = agent.model ?? 'claude-sonnet-4-6';
+    await sql`
+      INSERT INTO agent_usage_logs (id, user_id, agent_id, model, input_tokens, output_tokens, inserted_at)
+      VALUES (${randomUUID()}, ${userId}, ${agentId}, ${usageModel}, ${totalInputTokens}, ${totalOutputTokens}, ${now})
+    `;
 
     // 9. Emit run_finished
     emitAgentEvent(conversationId, {
