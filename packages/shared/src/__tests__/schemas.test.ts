@@ -7,6 +7,7 @@ import {
   StepStartedEventSchema,
   TextDeltaEventSchema,
   ThinkingEventSchema,
+  ToolApprovalRequestEventSchema,
   ToolCallEndEventSchema,
   ToolCallStartEventSchema,
 } from '../types/agent-events.js';
@@ -818,6 +819,95 @@ describe('AgentEventSchema', () => {
 
   it('rejects an event with correct type but invalid fields', () => {
     const result = AgentEventSchema.safeParse({ type: 'run_started' }); // missing run_id, agent_id
+    expect(result.success).toBe(false);
+  });
+
+  it('dispatches tool_approval_request correctly', () => {
+    const result = AgentEventSchema.parse({
+      type: 'tool_approval_request',
+      request_id: 'req-1',
+      tool_name: 'web_search',
+      args_preview: '{"query": "test"}',
+      scopes: ['allow_once', 'allow_for_session'],
+    });
+    expect(result.type).toBe('tool_approval_request');
+  });
+});
+
+/* ================================================================
+ * ToolApprovalRequestEventSchema
+ * ================================================================ */
+describe('ToolApprovalRequestEventSchema', () => {
+  it('accepts valid data with all fields', () => {
+    const data = {
+      type: 'tool_approval_request',
+      request_id: 'req-123',
+      tool_name: 'web_search',
+      args_preview: '{"query": "latest news"}',
+      scopes: ['allow_once', 'allow_for_session', 'always_for_agent_tool'],
+    };
+    expect(ToolApprovalRequestEventSchema.parse(data)).toEqual(data);
+  });
+
+  it('accepts empty scopes array', () => {
+    const data = {
+      type: 'tool_approval_request',
+      request_id: 'req-1',
+      tool_name: 'fn',
+      args_preview: '{}',
+      scopes: [],
+    };
+    expect(ToolApprovalRequestEventSchema.parse(data).scopes).toEqual([]);
+  });
+
+  it('rejects missing request_id', () => {
+    const result = ToolApprovalRequestEventSchema.safeParse({
+      type: 'tool_approval_request',
+      tool_name: 'fn',
+      args_preview: '{}',
+      scopes: [],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects missing tool_name', () => {
+    const result = ToolApprovalRequestEventSchema.safeParse({
+      type: 'tool_approval_request',
+      request_id: 'req-1',
+      args_preview: '{}',
+      scopes: [],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects missing args_preview', () => {
+    const result = ToolApprovalRequestEventSchema.safeParse({
+      type: 'tool_approval_request',
+      request_id: 'req-1',
+      tool_name: 'fn',
+      scopes: [],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects missing scopes', () => {
+    const result = ToolApprovalRequestEventSchema.safeParse({
+      type: 'tool_approval_request',
+      request_id: 'req-1',
+      tool_name: 'fn',
+      args_preview: '{}',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects wrong type literal', () => {
+    const result = ToolApprovalRequestEventSchema.safeParse({
+      type: 'tool_call_start',
+      request_id: 'req-1',
+      tool_name: 'fn',
+      args_preview: '{}',
+      scopes: [],
+    });
     expect(result.success).toBe(false);
   });
 });
