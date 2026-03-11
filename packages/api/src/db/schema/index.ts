@@ -1,6 +1,7 @@
 export * from './agent-collaborations.js';
 export * from './agents.js';
 export * from './conversations.js';
+export * from './knowledge-graph.js';
 export * from './crews.js';
 export * from './custom-types.js';
 export * from './integrations.js';
