@@ -700,12 +700,9 @@ describe('GET /conversations/:id/messages', () => {
 
     const cursorId = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee';
     const authHeaders = await getTokenHeader();
-    await request(
-      app,
-      'GET',
-      `/conversations/${CONV_ID}/messages?cursor=${cursorId}&limit=10`,
-      { headers: authHeaders },
-    );
+    await request(app, 'GET', `/conversations/${CONV_ID}/messages?cursor=${cursorId}&limit=10`, {
+      headers: authHeaders,
+    });
 
     expect(vi.mocked(listMessages)).toHaveBeenCalledWith(CONV_ID, USER_ID, cursorId, 10);
   });

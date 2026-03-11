@@ -293,7 +293,7 @@ describe('SocketClient', () => {
       mockSocket.emit.mockClear();
 
       // Simulate reconnect
-      const connectHandler = connectCall![1];
+      const connectHandler = connectCall?.[1];
       connectHandler();
 
       expect(mockSocket.emit).toHaveBeenCalledWith('join:conversation', 'c1');
@@ -309,7 +309,7 @@ describe('SocketClient', () => {
       );
 
       mockSocket.emit.mockClear();
-      connectCall![1]();
+      connectCall?.[1]();
 
       expect(mockSocket.emit).toHaveBeenCalledWith('join:agent', 'a1');
     });
