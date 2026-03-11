@@ -1,5 +1,6 @@
 'use client';
 
+import DOMPurify from 'dompurify';
 import hljs from 'highlight.js/lib/core';
 
 export type TextBlockData = {
@@ -12,7 +13,8 @@ function escapeHtml(raw: string): string {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
 }
 
 function renderInlineMarkdown(text: string): string {
@@ -33,6 +35,11 @@ function renderInlineMarkdown(text: string): string {
   result = result.replace(/\n/g, '<br/>');
   return result;
 }
+
+const PURIFY_CONFIG = {
+  ALLOWED_TAGS: ['strong', 'em', 'code', 'a', 'br', 'span'],
+  ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
+};
 
 export function TextBlock({ block }: { block: TextBlockData }) {
   const text = block.text || '';
@@ -72,7 +79,7 @@ export function TextBlock({ block }: { block: TextBlockData }) {
                 </button>
               </div>
               <pre className="cb-code-fence-pre">
-                <code dangerouslySetInnerHTML={{ __html: highlighted }} />
+                <code dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(highlighted) }} />
               </pre>
             </div>
           );
@@ -84,7 +91,7 @@ export function TextBlock({ block }: { block: TextBlockData }) {
           <span
             key={i}
             className="cb-text-content"
-            dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(part) }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderInlineMarkdown(part), PURIFY_CONFIG) }}
           />
         );
       })}

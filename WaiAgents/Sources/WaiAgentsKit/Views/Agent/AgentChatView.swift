@@ -232,8 +232,8 @@ public struct AgentChatView: View {
                     webSocketClient: appState.webSocketClient
                 )
                 viewModel = vm
-                vm.subscribeToChannel()
                 await vm.loadMessages()
+                vm.subscribeToChannel()
             }
         }
         .onDisappear {

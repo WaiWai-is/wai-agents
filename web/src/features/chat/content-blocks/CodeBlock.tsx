@@ -1,5 +1,6 @@
 'use client';
 
+import DOMPurify from 'dompurify';
 import hljs from 'highlight.js/lib/core';
 
 export type CodeBlockData = {
@@ -40,7 +41,7 @@ export function CodeBlock({ block }: { block: CodeBlockData }) {
         </button>
       </div>
       <pre className="cb-code-block-pre">
-        <code dangerouslySetInnerHTML={{ __html: highlighted }} />
+        <code dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(highlighted) }} />
       </pre>
       {block.output && (
         <div className="cb-code-block-output">

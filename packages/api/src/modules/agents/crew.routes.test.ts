@@ -675,3 +675,135 @@ describe('POST /crews/:id/run', () => {
     expect(res.status).toBe(422);
   });
 });
+
+/* -------------------------------------------------------------------------- */
+/*  Input Validation Edge Cases                                               */
+/* -------------------------------------------------------------------------- */
+
+describe('Crew Routes — Input Validation Edge Cases', () => {
+  it('POST /crews returns 422 for category exceeding 32 characters', async () => {
+    const authHeaders = await getTokenHeader();
+    const { status } = await request(app, 'POST', '/crews', {
+      headers: authHeaders,
+      body: {
+        name: 'Test',
+        steps: [{ agentId: AGENT_ID_1, role: 'researcher' }],
+        category: 'a'.repeat(33),
+      },
+    });
+
+    expect(status).toBe(422);
+  });
+
+  it('POST /crews returns 422 for name exceeding 64 characters', async () => {
+    const authHeaders = await getTokenHeader();
+    const { status } = await request(app, 'POST', '/crews', {
+      headers: authHeaders,
+      body: {
+        name: 'a'.repeat(65),
+        steps: [{ agentId: AGENT_ID_1, role: 'researcher' }],
+      },
+    });
+
+    expect(status).toBe(422);
+  });
+
+  it('POST /crews returns 422 for role exceeding 64 characters', async () => {
+    const authHeaders = await getTokenHeader();
+    const { status } = await request(app, 'POST', '/crews', {
+      headers: authHeaders,
+      body: {
+        name: 'Test',
+        steps: [{ agentId: AGENT_ID_1, role: 'a'.repeat(65) }],
+      },
+    });
+
+    expect(status).toBe(422);
+  });
+
+  it('POST /crews returns 422 for parallelGroup exceeding 32 characters', async () => {
+    const authHeaders = await getTokenHeader();
+    const { status } = await request(app, 'POST', '/crews', {
+      headers: authHeaders,
+      body: {
+        name: 'Test',
+        steps: [{ agentId: AGENT_ID_1, role: 'researcher', parallelGroup: 'a'.repeat(33) }],
+      },
+    });
+
+    expect(status).toBe(422);
+  });
+
+  it('POST /crews strips HTML from name', async () => {
+    const { createCrew } = await import('./crew.service.js');
+    vi.mocked(createCrew).mockResolvedValueOnce({
+      id: 'id',
+      name: 'alert(1)',
+      steps: [{ agentId: AGENT_ID_1, role: 'researcher' }],
+    } as any);
+
+    const authHeaders = await getTokenHeader();
+    const { status } = await request(app, 'POST', '/crews', {
+      headers: authHeaders,
+      body: {
+        name: '<script>alert(1)</script>',
+        steps: [{ agentId: AGENT_ID_1, role: 'researcher' }],
+      },
+    });
+
+    expect(status).toBe(201);
+    // Verify createCrew was called with HTML-stripped name
+    expect(vi.mocked(createCrew)).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ name: 'alert(1)' }),
+    );
+  });
+
+  it('POST /crews strips HTML from description', async () => {
+    const { createCrew } = await import('./crew.service.js');
+    vi.mocked(createCrew).mockResolvedValueOnce({
+      id: 'id',
+      name: 'Test',
+      description: 'bolded',
+    } as any);
+
+    const authHeaders = await getTokenHeader();
+    const { status } = await request(app, 'POST', '/crews', {
+      headers: authHeaders,
+      body: {
+        name: 'Test',
+        description: '<b>bolded</b>',
+        steps: [{ agentId: AGENT_ID_1, role: 'researcher' }],
+      },
+    });
+
+    expect(status).toBe(201);
+    expect(vi.mocked(createCrew)).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ description: 'bolded' }),
+    );
+  });
+
+  it('PATCH /crews/:id returns 422 for category exceeding 32 characters', async () => {
+    const authHeaders = await getTokenHeader();
+    const { status } = await request(app, 'PATCH', '/crews/crew-1', {
+      headers: authHeaders,
+      body: { category: 'a'.repeat(33) },
+    });
+
+    expect(status).toBe(422);
+  });
+
+  it('POST /crews/:id/run returns 422 for message exceeding 100000 characters', async () => {
+    const authHeaders = await getTokenHeader();
+    const { status } = await request(app, 'POST', '/crews/crew-1/run', {
+      headers: authHeaders,
+      body: {
+        conversation_id: CONVERSATION_ID,
+        message: 'a'.repeat(100001),
+      },
+    });
+
+    expect(status).toBe(422);
+  });
+});

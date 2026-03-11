@@ -16,7 +16,7 @@ export const CreateCrewSchema = z.object({
     .transform((v) => (v !== undefined ? stripHtml(v) : v)),
   steps: z.array(crewStepSchema).min(1).max(5),
   visibility: z.enum(['public', 'private', 'unlisted']).optional(),
-  category: z.string().optional(),
+  category: z.string().max(32).optional(),
 });
 
 export const UpdateCrewSchema = z.object({
@@ -27,7 +27,7 @@ export const UpdateCrewSchema = z.object({
     .transform((v) => (v !== undefined ? stripHtml(v) : v)),
   steps: z.array(crewStepSchema).min(1).max(5).optional(),
   visibility: z.enum(['public', 'private', 'unlisted']).optional(),
-  category: z.string().optional(),
+  category: z.string().max(32).optional(),
 });
 
 export const RunCrewSchema = z.object({

@@ -1,5 +1,6 @@
 'use client';
 
+import DOMPurify from 'dompurify';
 import hljs from 'highlight.js/lib/core';
 import bash from 'highlight.js/lib/languages/bash';
 import css from 'highlight.js/lib/languages/css';
@@ -934,7 +935,7 @@ export function ChatView({
                           </div>
                         )}
                         <pre className="cv-approval-args">
-                          <code dangerouslySetInnerHTML={{ __html: highlightedArgs }} />
+                          <code dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(highlightedArgs) }} />
                         </pre>
                         <div className="cv-approval-actions">
                           <button
@@ -1232,7 +1233,7 @@ function MessageContent({ text, content }: { text: string; content: Record<strin
                 </button>
               </div>
               <pre>
-                <code dangerouslySetInnerHTML={{ __html: highlighted }} />
+                <code dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(highlighted) }} />
               </pre>
             </div>
           );

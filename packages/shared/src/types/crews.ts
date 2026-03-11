@@ -52,7 +52,19 @@ export const CrewFinishedEventSchema = z.object({
   final_response: z.string(),
 });
 
+export const CrewErrorEventSchema = z.object({
+  type: z.literal('crew:error'),
+  crew_id: z.string(),
+  error: z.string(),
+  step_index: z.number().optional(),
+});
+
 export type CrewStepStartedEvent = z.infer<typeof CrewStepStartedEventSchema>;
 export type CrewStepCompletedEvent = z.infer<typeof CrewStepCompletedEventSchema>;
 export type CrewFinishedEvent = z.infer<typeof CrewFinishedEventSchema>;
-export type CrewEvent = CrewStepStartedEvent | CrewStepCompletedEvent | CrewFinishedEvent;
+export type CrewErrorEvent = z.infer<typeof CrewErrorEventSchema>;
+export type CrewEvent =
+  | CrewStepStartedEvent
+  | CrewStepCompletedEvent
+  | CrewFinishedEvent
+  | CrewErrorEvent;
