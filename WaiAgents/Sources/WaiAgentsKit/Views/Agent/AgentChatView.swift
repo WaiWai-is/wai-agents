@@ -353,13 +353,13 @@ public struct AgentChatView: View {
             }
         }
 
-        ws?.onComplete = { _ in
+        ws?.onComplete = { [weak viewModel] _ in
             streamingResetTask?.cancel()
+            isAgentStreaming = false
+            agentStatus = ""
+            streamingText = ""
             Task {
                 await viewModel?.loadMessages()
-                isAgentStreaming = false
-                agentStatus = ""
-                streamingText = ""
             }
         }
 

@@ -189,10 +189,5 @@ export function useAgentStream(socketClient: SocketClient, conversationId: strin
     };
   }, [socketClient, conversationId, resetStream]);
 
-  // Reset when conversation changes
-  useEffect(() => {
-    resetStream();
-  }, [resetStream]);
-
   return { streamingMessage, isStreaming, resetStream };
 }

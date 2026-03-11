@@ -239,7 +239,13 @@ export function ChatView({
 
   useEffect(() => {
     wsClient.connect(accessToken);
-    setWsConnected(true);
+    // Derive connected state from the actual socket rather than assuming
+    // it's connected immediately. Poll briefly until the socket reports ready,
+    // and also listen for disconnect so the flag stays accurate.
+    const checkConnected = setInterval(() => {
+      const connected = wsClient.isConnected();
+      setWsConnected((prev) => (prev !== connected ? connected : prev));
+    }, 500);
 
     const unsubMessage = wsClient.onMessage((payload: Record<string, unknown>) => {
       const msg = extractMessageFromEvent(payload);
@@ -306,6 +312,7 @@ export function ChatView({
     });
 
     return () => {
+      clearInterval(checkConnected);
       unsubMessage();
       unsubUpdated();
       unsubDeleted();

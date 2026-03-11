@@ -360,10 +360,10 @@ describe('ApprovalGate', () => {
     });
   });
 
-  // ---- Edge case: always cache survives clearSession ----
+  // ---- Edge case: clearSession clears all caches to prevent memory leaks ----
 
   describe('always cache persistence', () => {
-    it('clearSession does NOT clear always cache', async () => {
+    it('clearSession clears always cache to prevent memory leaks', async () => {
       const promise = gate.requestApproval('conv-1', 'tool_a', {});
       gate.resolveApproval(getRequestId(0), 'approve', 'allow_always');
       await promise;
@@ -372,8 +372,8 @@ describe('ApprovalGate', () => {
 
       gate.clearSession('conv-1');
 
-      // Always cache should survive session clear
-      expect(gate.isApproved('conv-1', 'tool_a')).toBe(true);
+      // Always cache is cleared along with session cache to prevent memory leaks
+      expect(gate.isApproved('conv-1', 'tool_a')).toBe(false);
     });
 
     it('destroy clears always cache', async () => {

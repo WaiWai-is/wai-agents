@@ -275,53 +275,64 @@ export async function sendMessage(
 ) {
   await assertMember(conversationId, userId);
 
-  // Check idempotency before starting the transaction
-  const existingIdempotent = await sql`
-    SELECT response_body FROM idempotency_keys
-    WHERE key = ${idempotencyKey} AND user_id = ${userId}
-    LIMIT 1
-  `;
-  if (existingIdempotent.length > 0) {
-    // Return cached response without re-emitting events or re-triggering agent loop
-    return (existingIdempotent[0] as Record<string, unknown>).response_body as ReturnType<
-      typeof formatMessage
-    >;
-  }
+  const result: { message: ReturnType<typeof formatMessage>; isDuplicate: boolean } =
+    // @ts-expect-error postgres.js TransactionSql type lacks call signatures but works at runtime
+    await sql.begin(async (tx: typeof sql) => {
+      // Check idempotency INSIDE the transaction to prevent race conditions
+      const existingIdempotent = await tx`
+      SELECT response_body FROM idempotency_keys
+      WHERE key = ${idempotencyKey} AND user_id = ${userId}
+      LIMIT 1
+    `;
+      if (existingIdempotent.length > 0) {
+        // Return cached response without re-emitting events or re-triggering agent loop
+        return {
+          message: (existingIdempotent[0] as Record<string, unknown>).response_body as ReturnType<
+            typeof formatMessage
+          >,
+          isDuplicate: true,
+        };
+      }
 
-  // @ts-expect-error postgres.js TransactionSql type lacks call signatures but works at runtime
-  const message: ReturnType<typeof formatMessage> = await sql.begin(async (tx: typeof sql) => {
-    const messageId = randomUUID();
-    const now = new Date().toISOString();
-    const contentJson = JSON.stringify(input.content);
+      const messageId = randomUUID();
+      const now = new Date().toISOString();
+      const contentJson = JSON.stringify(input.content);
 
-    await tx`
+      await tx`
       INSERT INTO messages (id, conversation_id, sender_id, sender_type, type, content, metadata, created_at)
       VALUES (${messageId}, ${conversationId}, ${userId}, 'human', 'text', ${contentJson}::jsonb, '{}', ${now})
     `;
 
-    // Update conversation last_message_at
-    await tx`
+      // Update conversation last_message_at
+      await tx`
       UPDATE conversations SET last_message_at = ${now}, updated_at = NOW()
       WHERE id = ${conversationId}
     `;
 
-    const rows = await tx`
+      const rows = await tx`
       SELECT id, conversation_id, sender_id, sender_type, type, content, metadata, edited_at, deleted_at, created_at
       FROM messages WHERE id = ${messageId}
     `;
 
-    const msg = formatMessage(rows[0] as Record<string, unknown>);
+      const msg = formatMessage(rows[0] as Record<string, unknown>);
 
-    // Save idempotency key
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-    await tx`
+      // Save idempotency key
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      await tx`
       INSERT INTO idempotency_keys (id, key, user_id, response_code, response_body, expires_at, inserted_at)
       VALUES (${randomUUID()}, ${idempotencyKey}, ${userId}, 201, ${JSON.stringify(msg)}::jsonb, ${expiresAt}, NOW())
       ON CONFLICT (key, user_id) DO NOTHING
     `;
 
-    return msg;
-  });
+      return { message: msg, isDuplicate: false };
+    });
+
+  // If this was a duplicate request, return cached response without side effects
+  if (result.isDuplicate) {
+    return result.message;
+  }
+
+  const message = result.message;
 
   // Emit WebSocket event (outside transaction)
   try {

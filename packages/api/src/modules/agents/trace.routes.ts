@@ -9,8 +9,10 @@ traceRoutes.get('/:agentId/traces', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const agentId = c.req.param('agentId');
   const status = c.req.query('status') ?? undefined;
-  const limit = c.req.query('limit') ? Number(c.req.query('limit')) : undefined;
-  const offset = c.req.query('offset') ? Number(c.req.query('offset')) : undefined;
+  const rawLimit = c.req.query('limit') ? Number(c.req.query('limit')) : undefined;
+  const rawOffset = c.req.query('offset') ? Number(c.req.query('offset')) : undefined;
+  const limit = rawLimit !== undefined && !Number.isNaN(rawLimit) ? rawLimit : undefined;
+  const offset = rawOffset !== undefined && !Number.isNaN(rawOffset) ? rawOffset : undefined;
 
   try {
     const traces = await listTraces(agentId, userId, { status, limit, offset });

@@ -70,8 +70,40 @@ export const articleCollectionWorker = createWorker(QUEUE_NAME, async () => {
     const agentId = source.agent_id as string;
     const feedUrl = source.url as string;
 
-    // Fetch the RSS feed
-    const response = await fetch(feedUrl);
+    // Validate URL to prevent SSRF — block internal/private networks
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(feedUrl);
+    } catch {
+      console.error(`Invalid RSS feed URL: ${feedUrl}`);
+      continue;
+    }
+    const hostname = parsedUrl.hostname.toLowerCase();
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '0.0.0.0' ||
+      hostname === '::1' ||
+      hostname.startsWith('10.') ||
+      hostname.startsWith('172.') ||
+      hostname.startsWith('192.168.') ||
+      hostname.startsWith('169.254.') ||
+      hostname.endsWith('.internal') ||
+      hostname.endsWith('.local') ||
+      !parsedUrl.protocol.startsWith('http')
+    ) {
+      console.error(`Blocked SSRF attempt to internal URL: ${feedUrl}`);
+      continue;
+    }
+
+    // Fetch the RSS feed with a 30-second timeout
+    let response: Response;
+    try {
+      response = await fetch(feedUrl, { signal: AbortSignal.timeout(30_000) });
+    } catch (fetchErr) {
+      console.error(`Failed to fetch RSS feed ${feedUrl}: ${(fetchErr as Error).message}`);
+      continue;
+    }
     if (!response.ok) {
       console.error(`Failed to fetch RSS feed ${feedUrl}: ${response.status}`);
       continue;

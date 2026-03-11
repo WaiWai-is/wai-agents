@@ -143,7 +143,9 @@ public struct FeedCardView: View {
         withAnimation(WaiAgentsMotion.spring) {
             likeScale = 1.3
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+        Task {
+            try? await Task.sleep(nanoseconds: 150_000_000)
+            guard !Task.isCancelled else { return }
             withAnimation(WaiAgentsMotion.spring) {
                 likeScale = 1.0
             }

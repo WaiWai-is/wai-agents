@@ -63,6 +63,11 @@ export function emitFeedbackEvent(conversationId: string, event: unknown): void 
   io.to(`conversation:${conversationId}`).emit('feedback:event', event);
 }
 
+export function emitCollaborationEvent(userId: string, event: unknown): void {
+  if (!io) throw new Error('Socket.IO not initialized');
+  io.to(`user:${userId}`).emit('collaboration:event', event);
+}
+
 export function forceLeaveRoom(userId: string, conversationId: string): void {
   if (!io) return;
   const room = `user:${userId}`;

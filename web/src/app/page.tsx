@@ -147,7 +147,7 @@ export default function HomePage() {
   }, []);
 
   const handleConversationFocused = useCallback(() => {
-    setFocusConversationId((prev) => (prev ? null : prev));
+    setFocusConversationId(null);
   }, []);
 
   // Loading state

@@ -233,6 +233,7 @@ export async function fireTrigger(
   `;
 
   // Build message from template or fallback to payload dump
+  const BLOCKED_TEMPLATE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
   let message: string;
   if (trigger.message_template) {
     message = (trigger.message_template as string).replace(
@@ -240,6 +241,7 @@ export async function fireTrigger(
       (_match, path: string) => {
         let current: unknown = payload;
         for (const key of path.split('.')) {
+          if (BLOCKED_TEMPLATE_KEYS.has(key)) return '';
           if (current === null || current === undefined || typeof current !== 'object') {
             return '';
           }

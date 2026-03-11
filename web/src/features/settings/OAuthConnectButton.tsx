@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { WaiAgentsApi } from '@/lib/api/services';
 
 type Props = {
@@ -12,6 +12,17 @@ type Props = {
 export function OAuthConnectButton({ api, service, onConnected }: Props) {
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const popupIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Clean up popup polling interval on unmount
+  useEffect(() => {
+    return () => {
+      if (popupIntervalRef.current) {
+        clearInterval(popupIntervalRef.current);
+        popupIntervalRef.current = null;
+      }
+    };
+  }, []);
 
   const handleConnect = useCallback(async () => {
     setConnecting(true);
@@ -25,10 +36,16 @@ export function OAuthConnectButton({ api, service, onConnected }: Props) {
         return;
       }
 
-      // Poll for popup closure
-      const interval = setInterval(() => {
+      // Poll for popup closure, storing ref for cleanup on unmount
+      if (popupIntervalRef.current) {
+        clearInterval(popupIntervalRef.current);
+      }
+      popupIntervalRef.current = setInterval(() => {
         if (popup.closed) {
-          clearInterval(interval);
+          if (popupIntervalRef.current) {
+            clearInterval(popupIntervalRef.current);
+            popupIntervalRef.current = null;
+          }
           setConnecting(false);
           onConnected();
         }

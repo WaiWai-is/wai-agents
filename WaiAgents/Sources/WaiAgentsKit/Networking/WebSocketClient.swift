@@ -11,7 +11,8 @@ public final class WebSocketClient: @unchecked Sendable {
     private let authManager: AuthManager
 
     /// Lock protecting mutable state accessed from multiple threads.
-    /// Protects: `activeChannels`, `joinedTopics`, `isReconnecting`, and `socket`.
+    /// Protects: `activeChannels`, `joinedTopics`, `isReconnecting`, `socket`,
+    /// and all handler closure properties.
     private let lock = NSLock()
 
     /// Tracks active channels by topic (e.g. "conversation:abc123") so we can push events to them.
@@ -34,35 +35,125 @@ public final class WebSocketClient: @unchecked Sendable {
         case disconnected
     }
 
-    public var onConnectionStateChanged: (@MainActor (_ state: ConnectionState) -> Void)?
+    // MARK: - Handler Properties (thread-safe via lock)
+    // All handler closures are accessed from both the main thread (where they
+    // are set by views/view models) and from SwiftPhoenixClient callbacks (which
+    // may fire on arbitrary threads). Access is protected by `lock`.
+
+    private var _onConnectionStateChanged: (@MainActor (_ state: ConnectionState) -> Void)?
+    public var onConnectionStateChanged: (@MainActor (_ state: ConnectionState) -> Void)? {
+        get { lock.withLock { _onConnectionStateChanged } }
+        set { lock.withLock { _onConnectionStateChanged = newValue } }
+    }
 
     // MARK: - Conversation Channel Handlers
 
-    public var onNewMessage: (@MainActor (_ payload: Message) -> Void)?
-    public var onMessageUpdated: (@MainActor (_ payload: Message) -> Void)?
-    public var onTyping: (@MainActor (_ payload: TypingPayload) -> Void)?
-    public var onPresenceState: (@MainActor (_ payload: [String: AnyCodable]) -> Void)?
-    public var onPresenceDiff: (@MainActor (_ payload: [String: AnyCodable]) -> Void)?
+    private var _onNewMessage: (@MainActor (_ payload: Message) -> Void)?
+    public var onNewMessage: (@MainActor (_ payload: Message) -> Void)? {
+        get { lock.withLock { _onNewMessage } }
+        set { lock.withLock { _onNewMessage = newValue } }
+    }
+
+    private var _onMessageUpdated: (@MainActor (_ payload: Message) -> Void)?
+    public var onMessageUpdated: (@MainActor (_ payload: Message) -> Void)? {
+        get { lock.withLock { _onMessageUpdated } }
+        set { lock.withLock { _onMessageUpdated = newValue } }
+    }
+
+    private var _onTyping: (@MainActor (_ payload: TypingPayload) -> Void)?
+    public var onTyping: (@MainActor (_ payload: TypingPayload) -> Void)? {
+        get { lock.withLock { _onTyping } }
+        set { lock.withLock { _onTyping = newValue } }
+    }
+
+    private var _onPresenceState: (@MainActor (_ payload: [String: AnyCodable]) -> Void)?
+    public var onPresenceState: (@MainActor (_ payload: [String: AnyCodable]) -> Void)? {
+        get { lock.withLock { _onPresenceState } }
+        set { lock.withLock { _onPresenceState = newValue } }
+    }
+
+    private var _onPresenceDiff: (@MainActor (_ payload: [String: AnyCodable]) -> Void)?
+    public var onPresenceDiff: (@MainActor (_ payload: [String: AnyCodable]) -> Void)? {
+        get { lock.withLock { _onPresenceDiff } }
+        set { lock.withLock { _onPresenceDiff = newValue } }
+    }
 
     // MARK: - Agent Channel Handlers
 
-    public var onToken: (@MainActor (_ payload: [String: AnyCodable]) -> Void)?
-    public var onStatus: (@MainActor (_ payload: [String: AnyCodable]) -> Void)?
-    public var onApprovalRequested: (@MainActor (_ payload: ApprovalRequestPayload) -> Void)?
-    public var onToolCall: (@MainActor (_ payload: ToolCallPayload) -> Void)?
-    public var onToolResult: (@MainActor (_ payload: ToolResultPayload) -> Void)?
-    public var onCodeBlock: (@MainActor (_ payload: CodeBlockPayload) -> Void)?
-    public var onComplete: (@MainActor (_ payload: [String: AnyCodable]) -> Void)?
-    public var onError: (@MainActor (_ payload: [String: AnyCodable]) -> Void)?
+    private var _onToken: (@MainActor (_ payload: [String: AnyCodable]) -> Void)?
+    public var onToken: (@MainActor (_ payload: [String: AnyCodable]) -> Void)? {
+        get { lock.withLock { _onToken } }
+        set { lock.withLock { _onToken = newValue } }
+    }
+
+    private var _onStatus: (@MainActor (_ payload: [String: AnyCodable]) -> Void)?
+    public var onStatus: (@MainActor (_ payload: [String: AnyCodable]) -> Void)? {
+        get { lock.withLock { _onStatus } }
+        set { lock.withLock { _onStatus = newValue } }
+    }
+
+    private var _onApprovalRequested: (@MainActor (_ payload: ApprovalRequestPayload) -> Void)?
+    public var onApprovalRequested: (@MainActor (_ payload: ApprovalRequestPayload) -> Void)? {
+        get { lock.withLock { _onApprovalRequested } }
+        set { lock.withLock { _onApprovalRequested = newValue } }
+    }
+
+    private var _onToolCall: (@MainActor (_ payload: ToolCallPayload) -> Void)?
+    public var onToolCall: (@MainActor (_ payload: ToolCallPayload) -> Void)? {
+        get { lock.withLock { _onToolCall } }
+        set { lock.withLock { _onToolCall = newValue } }
+    }
+
+    private var _onToolResult: (@MainActor (_ payload: ToolResultPayload) -> Void)?
+    public var onToolResult: (@MainActor (_ payload: ToolResultPayload) -> Void)? {
+        get { lock.withLock { _onToolResult } }
+        set { lock.withLock { _onToolResult = newValue } }
+    }
+
+    private var _onCodeBlock: (@MainActor (_ payload: CodeBlockPayload) -> Void)?
+    public var onCodeBlock: (@MainActor (_ payload: CodeBlockPayload) -> Void)? {
+        get { lock.withLock { _onCodeBlock } }
+        set { lock.withLock { _onCodeBlock = newValue } }
+    }
+
+    private var _onComplete: (@MainActor (_ payload: [String: AnyCodable]) -> Void)?
+    public var onComplete: (@MainActor (_ payload: [String: AnyCodable]) -> Void)? {
+        get { lock.withLock { _onComplete } }
+        set { lock.withLock { _onComplete = newValue } }
+    }
+
+    private var _onError: (@MainActor (_ payload: [String: AnyCodable]) -> Void)?
+    public var onError: (@MainActor (_ payload: [String: AnyCodable]) -> Void)? {
+        get { lock.withLock { _onError } }
+        set { lock.withLock { _onError = newValue } }
+    }
 
     // MARK: - User Channel Handlers
 
-    public var onNotification: (@MainActor (_ payload: [String: AnyCodable]) -> Void)?
-    public var onBridgeStatus: (@MainActor (_ payload: BridgeStatusPayload) -> Void)?
-    public var onConversationUpdated: (@MainActor (_ payload: Conversation) -> Void)?
+    private var _onNotification: (@MainActor (_ payload: [String: AnyCodable]) -> Void)?
+    public var onNotification: (@MainActor (_ payload: [String: AnyCodable]) -> Void)? {
+        get { lock.withLock { _onNotification } }
+        set { lock.withLock { _onNotification = newValue } }
+    }
+
+    private var _onBridgeStatus: (@MainActor (_ payload: BridgeStatusPayload) -> Void)?
+    public var onBridgeStatus: (@MainActor (_ payload: BridgeStatusPayload) -> Void)? {
+        get { lock.withLock { _onBridgeStatus } }
+        set { lock.withLock { _onBridgeStatus = newValue } }
+    }
+
+    private var _onConversationUpdated: (@MainActor (_ payload: Conversation) -> Void)?
+    public var onConversationUpdated: (@MainActor (_ payload: Conversation) -> Void)? {
+        get { lock.withLock { _onConversationUpdated } }
+        set { lock.withLock { _onConversationUpdated = newValue } }
+    }
 
     /// Called when auth fails and token refresh also fails (user must re-login).
-    public var onAuthFailure: (@MainActor () -> Void)?
+    private var _onAuthFailure: (@MainActor () -> Void)?
+    public var onAuthFailure: (@MainActor () -> Void)? {
+        get { lock.withLock { _onAuthFailure } }
+        set { lock.withLock { _onAuthFailure = newValue } }
+    }
 
     public init(baseURL: String, accessToken: String, authManager: AuthManager) {
         self.baseURL = baseURL
@@ -242,6 +333,14 @@ public final class WebSocketClient: @unchecked Sendable {
         }
 
         channel.join()
+            .receive("error") { @Sendable [weak self] message in
+                let payload = message.payload
+                if let reason = payload["reason"] as? String, reason.contains("unauthorized") {
+                    Task { [weak self] in
+                        await self?.handleAuthFailure()
+                    }
+                }
+            }
         lock.withLock {
             activeChannels[topic] = channel
             joinedTopics.insert(topic)
@@ -344,6 +443,14 @@ public final class WebSocketClient: @unchecked Sendable {
         }
 
         channel.join()
+            .receive("error") { @Sendable [weak self] message in
+                let payload = message.payload
+                if let reason = payload["reason"] as? String, reason.contains("unauthorized") {
+                    Task { [weak self] in
+                        await self?.handleAuthFailure()
+                    }
+                }
+            }
         lock.withLock {
             activeChannels[topic] = channel
             joinedTopics.insert(topic)
@@ -391,6 +498,14 @@ public final class WebSocketClient: @unchecked Sendable {
         }
 
         channel.join()
+            .receive("error") { @Sendable [weak self] message in
+                let payload = message.payload
+                if let reason = payload["reason"] as? String, reason.contains("unauthorized") {
+                    Task { [weak self] in
+                        await self?.handleAuthFailure()
+                    }
+                }
+            }
         lock.withLock {
             activeChannels[topic] = channel
             joinedTopics.insert(topic)

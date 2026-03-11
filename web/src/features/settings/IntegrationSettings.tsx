@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { WaiAgentsApi } from '@/lib/api/services';
 import type { IntegrationStatus } from '@/lib/types';
 import { IntegrationCard } from './IntegrationCard';
@@ -14,6 +14,7 @@ export function IntegrationSettings({ api }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [connectingService, setConnectingService] = useState<string | null>(null);
+  const popupIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadIntegrations = useCallback(async () => {
     setLoading(true);
@@ -32,6 +33,16 @@ export function IntegrationSettings({ api }: Props) {
     void loadIntegrations();
   }, [loadIntegrations]);
 
+  // Clean up popup polling interval on unmount
+  useEffect(() => {
+    return () => {
+      if (popupIntervalRef.current) {
+        clearInterval(popupIntervalRef.current);
+        popupIntervalRef.current = null;
+      }
+    };
+  }, []);
+
   async function handleConnect(service: string) {
     setConnectingService(service);
     setError(null);
@@ -43,9 +54,15 @@ export function IntegrationSettings({ api }: Props) {
         setConnectingService(null);
         return;
       }
-      const interval = setInterval(() => {
+      if (popupIntervalRef.current) {
+        clearInterval(popupIntervalRef.current);
+      }
+      popupIntervalRef.current = setInterval(() => {
         if (popup.closed) {
-          clearInterval(interval);
+          if (popupIntervalRef.current) {
+            clearInterval(popupIntervalRef.current);
+            popupIntervalRef.current = null;
+          }
           setConnectingService(null);
           void loadIntegrations();
         }

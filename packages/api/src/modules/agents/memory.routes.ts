@@ -19,11 +19,17 @@ memoryRoutes.get('/:agentId/memories', authMiddleware, async (c) => {
   const agentId = c.req.param('agentId');
   const type = c.req.query('type') ?? undefined;
   const search = c.req.query('search') ?? undefined;
-  const minImportance = c.req.query('minImportance')
+  const rawMinImportance = c.req.query('minImportance')
     ? Number(c.req.query('minImportance'))
     : undefined;
-  const limit = c.req.query('limit') ? Number(c.req.query('limit')) : undefined;
-  const offset = c.req.query('offset') ? Number(c.req.query('offset')) : undefined;
+  const rawLimit = c.req.query('limit') ? Number(c.req.query('limit')) : undefined;
+  const rawOffset = c.req.query('offset') ? Number(c.req.query('offset')) : undefined;
+  const minImportance =
+    rawMinImportance !== undefined && !Number.isNaN(rawMinImportance)
+      ? rawMinImportance
+      : undefined;
+  const limit = rawLimit !== undefined && !Number.isNaN(rawLimit) ? rawLimit : undefined;
+  const offset = rawOffset !== undefined && !Number.isNaN(rawOffset) ? rawOffset : undefined;
 
   try {
     const memories = await listMemories(agentId, userId, {
@@ -65,10 +71,12 @@ memoryRoutes.get('/:agentId/memories/recall', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const agentId = c.req.param('agentId');
   const query = c.req.query('query') ?? undefined;
-  const limit = c.req.query('limit') ? Number(c.req.query('limit')) : undefined;
+  const rawRecallLimit = c.req.query('limit') ? Number(c.req.query('limit')) : undefined;
+  const recallLimit =
+    rawRecallLimit !== undefined && !Number.isNaN(rawRecallLimit) ? rawRecallLimit : undefined;
 
   try {
-    const memories = await recallMemories(agentId, userId, query, limit);
+    const memories = await recallMemories(agentId, userId, query, recallLimit);
     return c.json({ memories }, 200);
   } catch (err) {
     const e = err as Error & { code?: string };

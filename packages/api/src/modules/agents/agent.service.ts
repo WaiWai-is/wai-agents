@@ -163,12 +163,14 @@ export async function createAgent(userId: string, input: CreateAgentInput) {
 }
 
 export async function getAgent(agentId: string, userId: string) {
+  // Allow access if user is the creator OR the agent is public/unlisted
   const rows = await sql`
     SELECT id, creator_id, name, slug, description, avatar_url, system_prompt, model,
            temperature, max_tokens, tools, mcp_servers, visibility, category,
            usage_count, rating_sum, rating_count, execution_mode, metadata, inserted_at, updated_at
     FROM agents
-    WHERE id = ${agentId} AND creator_id = ${userId}
+    WHERE id = ${agentId}
+      AND (creator_id = ${userId} OR visibility IN ('public', 'unlisted'))
     LIMIT 1
   `;
 

@@ -214,10 +214,11 @@ export class ApprovalGate {
   }
 
   /**
-   * Clear session cache for a conversation (e.g. when session ends).
+   * Clear session cache and always cache for a conversation (e.g. when session ends).
    */
   clearSession(conversationId: string): void {
     this.sessionCache.delete(conversationId);
+    this.alwaysCache.delete(conversationId);
     this.denialCounts.delete(conversationId);
   }
 

@@ -23,6 +23,15 @@ export function AgentTestSandbox({ api, agentId }: Props) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const cancelledRef = useRef(false);
+
+  // Reset cancelled flag on mount; set on unmount to abort polling loops
+  useEffect(() => {
+    cancelledRef.current = false;
+    return () => {
+      cancelledRef.current = true;
+    };
+  }, []);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: messages triggers scroll on new message arrival
   useEffect(() => {
@@ -42,7 +51,12 @@ export function AgentTestSandbox({ api, agentId }: Props) {
       const startedAt = Date.now();
 
       while (Date.now() - startedAt < 30_000) {
+        if (cancelledRef.current) return null;
+
         const response = await api.listMessages(nextConversationId, { limit: 20 });
+
+        if (cancelledRef.current) return null;
+
         const reply = [...response.items]
           .reverse()
           .find(

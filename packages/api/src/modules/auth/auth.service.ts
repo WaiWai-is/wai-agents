@@ -23,7 +23,7 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 export async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
-  // Handle argon2id hashes from the old Elixir backend
+  // Handle argon2id hashes (current format from hashPassword())
   if (storedHash.startsWith('$argon2')) {
     try {
       return await argon2.verify(storedHash, password);
@@ -32,7 +32,7 @@ export async function verifyPassword(password: string, storedHash: string): Prom
     }
   }
 
-  // Handle new scrypt hashes (salt:hash format)
+  // Handle legacy scrypt hashes (salt:hash format) from older deployments
   const [salt, hash] = storedHash.split(':');
   if (!salt || !hash) return false;
   const hashBuffer = Buffer.from(hash, 'hex');
@@ -68,6 +68,10 @@ export async function verifyAccessToken(token: string): Promise<{ sub: string; r
   const { payload } = await jwtVerify(token, JWT_SECRET);
   if (!payload.sub || typeof payload.role !== 'string') {
     throw new Error('Invalid access token payload');
+  }
+  // Explicitly reject refresh tokens used as access tokens
+  if (payload.type === 'refresh') {
+    throw new Error('Refresh token cannot be used as access token');
   }
   return { sub: payload.sub, role: payload.role };
 }

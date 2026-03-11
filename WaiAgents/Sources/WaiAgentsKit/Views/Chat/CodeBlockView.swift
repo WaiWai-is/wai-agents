@@ -70,7 +70,9 @@ public struct CodeBlockView: View {
         UIPasteboard.general.string = code
         #endif
         copied = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+        Task {
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            guard !Task.isCancelled else { return }
             copied = false
         }
     }
