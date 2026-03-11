@@ -42,24 +42,37 @@ export async function handleWebSearch(
 
   const results: Array<{ title: string; url: string; snippet: string }> = [];
 
+  // Collect the text block from Claude's response to use as snippet source
+  let synthesizedText = '';
+  for (const block of response.content) {
+    if (block.type === 'text') {
+      synthesizedText += block.text;
+    }
+  }
+
   for (const block of response.content) {
     if (block.type === 'web_search_tool_result') {
       const content = block.content;
       if (Array.isArray(content)) {
         for (const item of content) {
           if (item.type === 'web_search_result') {
+            // encrypted_content is opaque and not usable as a snippet.
+            // Extract a snippet from Claude's synthesized text that mentions this URL or title.
+            let snippet = '';
+            if (synthesizedText) {
+              const titleEscaped = item.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              const match = synthesizedText.match(new RegExp(`[^.]*${titleEscaped.slice(0, 30)}[^.]*\\.`, 'i'));
+              snippet = match ? match[0].trim() : '';
+            }
             results.push({
               title: item.title,
               url: item.url,
-              snippet: item.encrypted_content ? '' : '',
+              snippet,
             });
             if (results.length >= input.max_results) break;
           }
         }
       }
-    } else if (block.type === 'text') {
-      // The text response may describe search results when web_search_tool_result isn't available
-      // This is a fallback for parsing text-based results
     }
   }
 

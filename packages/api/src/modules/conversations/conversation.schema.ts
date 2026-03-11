@@ -13,12 +13,15 @@ export const UpdateConversationSchema = z.object({
 });
 
 export const SendMessageSchema = z.object({
-  content: z.array(ContentBlockSchema),
+  content: z.array(ContentBlockSchema).min(1).refine(
+    (blocks) => JSON.stringify(blocks).length <= 100000,
+    { message: 'Message content too large (max 100KB)' }
+  ),
 });
 
 export const AddMemberSchema = z.object({
   user_id: z.string().uuid(),
-  role: z.enum(['owner', 'admin', 'member']).optional(),
+  role: z.enum(['member', 'admin']).optional().default('member'),
 });
 
 export type CreateConversationInput = z.infer<typeof CreateConversationSchema>;

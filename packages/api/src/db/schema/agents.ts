@@ -167,8 +167,8 @@ export type NewAgentCoreMemory = typeof agentCoreMemories.$inferInsert;
 
 export const agentTasks = pgTable('agent_tasks', {
   id: uuid('id').primaryKey().defaultRandom(),
-  callerAgentId: uuid('caller_agent_id').references(() => agents.id),
-  calleeAgentId: uuid('callee_agent_id').notNull().references(() => agents.id),
+  callerAgentId: uuid('caller_agent_id').references(() => agents.id, { onDelete: 'set null' }),
+  calleeAgentId: uuid('callee_agent_id').notNull().references(() => agents.id, { onDelete: 'set null' }),
   conversationId: uuid('conversation_id'),
   status: varchar('status', { length: 20 }).default('submitted'),
   message: text('message'),

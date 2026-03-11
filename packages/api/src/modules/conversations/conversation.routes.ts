@@ -22,6 +22,8 @@ import { sql } from '../../db/connection.js';
 import { MessageFeedbackSchema } from '../social/social.schema.js';
 import { submitMessageFeedback, shouldPromptFeedback } from '../social/social.service.js';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export const conversationRoutes = new Hono();
 
 // GET / — list user's conversations
@@ -47,6 +49,9 @@ conversationRoutes.post('/', authMiddleware, async (c) => {
 conversationRoutes.get('/:id', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const conversationId = c.req.param('id');
+  if (!UUID_REGEX.test(conversationId)) {
+    return c.json({ error: 'Invalid ID format' }, 400);
+  }
   try {
     const conversation = await getConversation(conversationId, userId);
     return c.json({ conversation }, 200);
@@ -61,6 +66,9 @@ conversationRoutes.get('/:id', authMiddleware, async (c) => {
 conversationRoutes.patch('/:id', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const conversationId = c.req.param('id');
+  if (!UUID_REGEX.test(conversationId)) {
+    return c.json({ error: 'Invalid ID format' }, 400);
+  }
   const body = await c.req.json().catch(() => null);
   const parsed = UpdateConversationSchema.safeParse(body);
   if (!parsed.success) {
@@ -81,6 +89,9 @@ conversationRoutes.patch('/:id', authMiddleware, async (c) => {
 conversationRoutes.delete('/:id', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const conversationId = c.req.param('id');
+  if (!UUID_REGEX.test(conversationId)) {
+    return c.json({ error: 'Invalid ID format' }, 400);
+  }
   try {
     await deleteConversation(conversationId, userId);
     return c.json({ ok: true }, 200);
@@ -96,9 +107,13 @@ conversationRoutes.delete('/:id', authMiddleware, async (c) => {
 conversationRoutes.get('/:id/messages', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const conversationId = c.req.param('id');
+  if (!UUID_REGEX.test(conversationId)) {
+    return c.json({ error: 'Invalid ID format' }, 400);
+  }
   const cursor = c.req.query('cursor');
   const limitParam = c.req.query('limit');
-  const limit = limitParam ? parseInt(limitParam, 10) : 50;
+  const parsedLimit = limitParam ? parseInt(limitParam, 10) : 50;
+  const limit = isNaN(parsedLimit) ? 50 : parsedLimit;
   try {
     const messages = await listMessages(conversationId, userId, cursor, limit);
     return c.json({ messages }, 200);
@@ -114,6 +129,9 @@ conversationRoutes.get('/:id/messages', authMiddleware, async (c) => {
 conversationRoutes.post('/:id/messages', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const conversationId = c.req.param('id');
+  if (!UUID_REGEX.test(conversationId)) {
+    return c.json({ error: 'Invalid ID format' }, 400);
+  }
   const idempotencyKey = c.req.header('Idempotency-Key');
   if (!idempotencyKey) {
     return c.json({ error: 'Bad request', message: 'Idempotency-Key header is required' }, 400);
@@ -137,6 +155,9 @@ conversationRoutes.post('/:id/messages', authMiddleware, async (c) => {
 conversationRoutes.get('/:id/members', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const conversationId = c.req.param('id');
+  if (!UUID_REGEX.test(conversationId)) {
+    return c.json({ error: 'Invalid ID format' }, 400);
+  }
   try {
     const members = await listMembers(conversationId, userId);
     return c.json({ members }, 200);
@@ -151,6 +172,9 @@ conversationRoutes.get('/:id/members', authMiddleware, async (c) => {
 conversationRoutes.post('/:id/members', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const conversationId = c.req.param('id');
+  if (!UUID_REGEX.test(conversationId)) {
+    return c.json({ error: 'Invalid ID format' }, 400);
+  }
   const body = await c.req.json().catch(() => null);
   const parsed = AddMemberSchema.safeParse(body);
   if (!parsed.success) {
@@ -172,6 +196,9 @@ conversationRoutes.delete('/:id/members/:userId', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const conversationId = c.req.param('id');
   const targetUserId = c.req.param('userId');
+  if (!UUID_REGEX.test(conversationId) || !UUID_REGEX.test(targetUserId)) {
+    return c.json({ error: 'Invalid ID format' }, 400);
+  }
   try {
     await removeMember(conversationId, userId, targetUserId);
     return c.json({ ok: true }, 200);
@@ -188,6 +215,9 @@ conversationRoutes.post('/:id/messages/:messageId/feedback', authMiddleware, asy
   const userId = c.get('userId');
   const conversationId = c.req.param('id');
   const messageId = c.req.param('messageId');
+  if (!UUID_REGEX.test(conversationId) || !UUID_REGEX.test(messageId)) {
+    return c.json({ error: 'Invalid ID format' }, 400);
+  }
   const body = await c.req.json().catch(() => null);
   const parsed = MessageFeedbackSchema.safeParse(body);
   if (!parsed.success) {
@@ -236,6 +266,9 @@ conversationRoutes.post('/:id/messages/:messageId/feedback', authMiddleware, asy
 conversationRoutes.get('/:id/should-prompt-feedback', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const conversationId = c.req.param('id');
+  if (!UUID_REGEX.test(conversationId)) {
+    return c.json({ error: 'Invalid ID format' }, 400);
+  }
 
   // Verify user is a member of this conversation
   const memberRows = await sql`

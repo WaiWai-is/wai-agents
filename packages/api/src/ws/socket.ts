@@ -6,6 +6,7 @@ import { setupAgentHandlers } from './agent-channel.js';
 import { setupUserHandlers } from './user-channel.js';
 import { setIO } from './emitter.js';
 import { addToPresence, removeFromPresence } from './presence.js';
+import { JWT_SECRET_STRING } from '../modules/auth/auth.service.js';
 
 export function createSocketServer(httpServer: HttpServer): SocketIOServer {
   const io = new SocketIOServer(httpServer, {
@@ -16,11 +17,7 @@ export function createSocketServer(httpServer: HttpServer): SocketIOServer {
     path: '/socket.io',
   });
 
-  const jwtSecretValue = process.env.JWT_SECRET || (() => {
-    if (process.env.NODE_ENV === 'production') throw new Error('JWT_SECRET must be set in production');
-    return 'dev-secret-change-in-production';
-  })();
-  const jwtSecret = new TextEncoder().encode(jwtSecretValue);
+  const jwtSecret = new TextEncoder().encode(JWT_SECRET_STRING);
 
   io.use(async (socket, next) => {
     const token = socket.handshake.auth?.token as string | undefined;

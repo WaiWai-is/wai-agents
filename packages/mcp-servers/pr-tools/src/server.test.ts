@@ -129,13 +129,13 @@ describe('ListSourcesInput schema', () => {
 });
 
 describe('RemoveSourceInput schema', () => {
-  it('accepts valid source_id', () => {
-    const result = RemoveSourceInput.safeParse({ source_id: SOURCE_ID });
+  it('accepts valid source_id and agent_id', () => {
+    const result = RemoveSourceInput.safeParse({ source_id: SOURCE_ID, agent_id: AGENT_ID });
     expect(result.success).toBe(true);
   });
 
   it('rejects non-UUID source_id', () => {
-    const result = RemoveSourceInput.safeParse({ source_id: 'bad-id' });
+    const result = RemoveSourceInput.safeParse({ source_id: 'bad-id', agent_id: AGENT_ID });
     expect(result.success).toBe(false);
   });
 });
@@ -144,6 +144,7 @@ describe('UpdateSourceInput schema', () => {
   it('accepts partial update', () => {
     const result = UpdateSourceInput.safeParse({
       source_id: SOURCE_ID,
+      agent_id: AGENT_ID,
       name: 'New Name',
     });
     expect(result.success).toBe(true);
@@ -152,6 +153,7 @@ describe('UpdateSourceInput schema', () => {
   it('accepts all fields', () => {
     const result = UpdateSourceInput.safeParse({
       source_id: SOURCE_ID,
+      agent_id: AGENT_ID,
       name: 'Updated',
       url: 'https://updated.com',
       config: { key: 'value' },
@@ -298,27 +300,27 @@ describe('handleListSources', () => {
 describe('handleRemoveSource', () => {
   it('returns deleted true when source exists', async () => {
     vi.mocked(sql).mockReturnValue(mockSql([], 1));
-    const result = await handleRemoveSource({ source_id: SOURCE_ID });
+    const result = await handleRemoveSource({ source_id: SOURCE_ID, agent_id: AGENT_ID });
     expect(result.deleted).toBe(true);
   });
 
   it('returns deleted false when source not found', async () => {
     vi.mocked(sql).mockReturnValue(mockSql([], 0));
-    const result = await handleRemoveSource({ source_id: SOURCE_ID });
+    const result = await handleRemoveSource({ source_id: SOURCE_ID, agent_id: AGENT_ID });
     expect(result.deleted).toBe(false);
   });
 });
 
 describe('handleUpdateSource', () => {
   it('returns updated false when no fields provided', async () => {
-    const result = await handleUpdateSource({ source_id: SOURCE_ID });
+    const result = await handleUpdateSource({ source_id: SOURCE_ID, agent_id: AGENT_ID });
     expect(result.updated).toBe(false);
     expect(sql).not.toHaveBeenCalled();
   });
 
   it('updates name only', async () => {
     vi.mocked(sql).mockReturnValue(mockSql([], 1));
-    const result = await handleUpdateSource({ source_id: SOURCE_ID, name: 'New Name' });
+    const result = await handleUpdateSource({ source_id: SOURCE_ID, agent_id: AGENT_ID, name: 'New Name' });
     expect(result.updated).toBe(true);
     expect(sql).toHaveBeenCalledTimes(1);
   });
@@ -327,6 +329,7 @@ describe('handleUpdateSource', () => {
     vi.mocked(sql).mockReturnValue(mockSql([], 1));
     const result = await handleUpdateSource({
       source_id: SOURCE_ID,
+      agent_id: AGENT_ID,
       name: 'Updated',
       url: 'https://new.com',
       config: { key: 'value' },
@@ -376,14 +379,14 @@ describe('handleGetArticleDetails', () => {
     };
     vi.mocked(sql).mockReturnValue(mockSql([mockArticle], 1));
 
-    const result = await handleGetArticleDetails({ article_id: ARTICLE_ID });
+    const result = await handleGetArticleDetails({ article_id: ARTICLE_ID, agent_id: AGENT_ID });
 
     expect(result.article.title).toBe('Test Article');
   });
 
   it('throws when article not found', async () => {
     vi.mocked(sql).mockReturnValue(mockSql([], 0));
-    await expect(handleGetArticleDetails({ article_id: ARTICLE_ID })).rejects.toThrow('Article not found');
+    await expect(handleGetArticleDetails({ article_id: ARTICLE_ID, agent_id: AGENT_ID })).rejects.toThrow('Article not found');
   });
 });
 
@@ -399,7 +402,7 @@ describe('handleSummarizeArticle', () => {
       .mockReturnValueOnce(mockSql([mockArticle], 1))
       .mockReturnValue(mockSql([], 1));
 
-    const result = await handleSummarizeArticle({ article_id: ARTICLE_ID });
+    const result = await handleSummarizeArticle({ article_id: ARTICLE_ID, agent_id: AGENT_ID });
 
     expect(sql).toHaveBeenCalledTimes(2); // fetch + update
     expect(result).toHaveProperty('article_id', ARTICLE_ID);
@@ -409,7 +412,7 @@ describe('handleSummarizeArticle', () => {
 
   it('throws when article not found', async () => {
     vi.mocked(sql).mockReturnValue(mockSql([], 0));
-    await expect(handleSummarizeArticle({ article_id: ARTICLE_ID })).rejects.toThrow('Article not found');
+    await expect(handleSummarizeArticle({ article_id: ARTICLE_ID, agent_id: AGENT_ID })).rejects.toThrow('Article not found');
   });
 });
 

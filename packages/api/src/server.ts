@@ -1,4 +1,5 @@
 import { serve } from '@hono/node-server';
+import { timingSafeEqual } from 'node:crypto';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
@@ -16,11 +17,31 @@ import type { CallerContext } from './modules/agents/soul.js';
 
 const app = new Hono();
 
+app.onError((err, c) => {
+  console.error(err);
+  if (err.message && err.message.includes('invalid input syntax for type uuid')) {
+    return c.json({ error: 'Invalid ID format' }, 400);
+  }
+  return c.json({ error: 'Internal server error' }, 500);
+});
+
 app.use('*', logger());
+
+app.use('*', async (c, next) => {
+  await next();
+  c.res.headers.set('X-Content-Type-Options', 'nosniff');
+  c.res.headers.set('X-Frame-Options', 'DENY');
+  c.res.headers.set('X-XSS-Protection', '0');
+  c.res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  c.res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+});
+
 app.use(
   '*',
   cors({
-    origin: ['http://localhost:3000', 'https://waiagents.com'],
+    origin: process.env.NODE_ENV === 'production'
+      ? ['https://openraccoon.com']
+      : ['http://localhost:3000', 'https://openraccoon.com'],
     credentials: true,
   }),
 );
@@ -41,9 +62,10 @@ app.post('/api/v1/internal/agent/execute', async (c) => {
   const internalKey = c.req.header('X-Internal-Key');
   const expectedKey = process.env.INTERNAL_API_KEY;
   if (!expectedKey) {
-    return c.json({ error: 'Internal API key not configured' }, 500);
+    return c.json({ error: 'Internal server error' }, 500);
   }
-  if (internalKey !== expectedKey) {
+  if (!internalKey || Buffer.byteLength(internalKey) !== Buffer.byteLength(expectedKey) ||
+      !timingSafeEqual(Buffer.from(internalKey), Buffer.from(expectedKey))) {
     return c.json({ error: 'Unauthorized' }, 401);
   }
 

@@ -5,10 +5,15 @@ import { socialRoutes } from './social.routes.js';
 import { generateTokens } from '../auth/auth.service.js';
 
 // Mock DB connection
-vi.mock('../../db/connection.js', () => ({
-  sql: Object.assign(vi.fn(), { unsafe: vi.fn() }),
-  db: {},
-}));
+vi.mock('../../db/connection.js', () => {
+  const sqlFn = Object.assign(vi.fn(), {
+    unsafe: vi.fn(),
+    begin: vi.fn(async (cb: (tx: any) => Promise<any>) => {
+      return cb(sqlFn);
+    }),
+  });
+  return { sql: sqlFn, db: {} };
+});
 
 const USER_ID = '550e8400-e29b-41d4-a716-446655440000';
 const OTHER_USER_ID = '660e8400-e29b-41d4-a716-446655440001';
@@ -144,9 +149,22 @@ describe('POST /feed/:id/like', () => {
     const { sql } = await import('../../db/connection.js');
     const sqlMock = vi.mocked(sql);
 
+    // 1. Check feed item exists
     sqlMock.mockResolvedValueOnce([{ id: FEED_ITEM_ID }] as any);
+    // 2. Insert like (inside transaction)
     sqlMock.mockResolvedValueOnce([] as any);
-    sqlMock.mockResolvedValueOnce([{ id: FEED_ITEM_ID, like_count: 4 }] as any);
+    // 3. Update + RETURNING feed item
+    sqlMock.mockResolvedValueOnce([{
+      id: FEED_ITEM_ID, creator_id: OTHER_USER_ID, type: 'agent',
+      reference_id: AGENT_ID, reference_type: 'agent', title: 'Test',
+      description: 'Desc', thumbnail_url: null, quality_score: 0,
+      trending_score: 5.0, like_count: 4, fork_count: 1, view_count: 100,
+      inserted_at: new Date('2026-01-01'), updated_at: new Date('2026-01-01'),
+    }] as any);
+    // 4. Creator lookup
+    sqlMock.mockResolvedValueOnce([{
+      username: 'testuser', display_name: 'Test User', avatar_url: null,
+    }] as any);
 
     const { status, body } = await request(app, 'POST', `/feed/${FEED_ITEM_ID}/like`);
     expect(status).toBe(200);
@@ -157,7 +175,7 @@ describe('POST /feed/:id/like', () => {
     const { sql } = await import('../../db/connection.js');
     vi.mocked(sql).mockResolvedValueOnce([] as any);
 
-    const { status } = await request(app, 'POST', '/feed/nonexistent/like');
+    const { status } = await request(app, 'POST', '/feed/00000000-0000-0000-0000-000000000099/like');
     expect(status).toBe(404);
   });
 });
@@ -167,8 +185,11 @@ describe('DELETE /feed/:id/like', () => {
     const { sql } = await import('../../db/connection.js');
     const sqlMock = vi.mocked(sql);
 
+    // 1. Check feed item exists
     sqlMock.mockResolvedValueOnce([{ id: FEED_ITEM_ID }] as any);
+    // 2. Delete like (inside transaction)
     sqlMock.mockResolvedValueOnce([] as any);
+    // 3. Update like_count
     sqlMock.mockResolvedValueOnce([] as any);
 
     const { status, body } = await request(app, 'DELETE', `/feed/${FEED_ITEM_ID}/like`);
@@ -237,7 +258,7 @@ describe('POST /feed/:id/fork', () => {
     const { sql } = await import('../../db/connection.js');
     vi.mocked(sql).mockResolvedValueOnce([] as any);
 
-    const { status } = await request(app, 'POST', '/feed/nonexistent/fork');
+    const { status } = await request(app, 'POST', '/feed/00000000-0000-0000-0000-000000000099/fork');
     expect(status).toBe(404);
   });
 });
@@ -413,7 +434,7 @@ describe('POST /marketplace/agents/:id/rate', () => {
     const { sql } = await import('../../db/connection.js');
     vi.mocked(sql).mockResolvedValueOnce([] as any);
 
-    const { status } = await request(app, 'POST', `/marketplace/agents/nonexistent/rate`, {
+    const { status } = await request(app, 'POST', `/marketplace/agents/00000000-0000-0000-0000-000000000099/rate`, {
       body: { rating: 4 },
     });
     expect(status).toBe(404);
@@ -447,7 +468,7 @@ describe('POST /users/:id/follow', () => {
     const { sql } = await import('../../db/connection.js');
     vi.mocked(sql).mockResolvedValueOnce([] as any);
 
-    const { status } = await request(app, 'POST', '/users/nonexistent/follow');
+    const { status } = await request(app, 'POST', '/users/00000000-0000-0000-0000-000000000099/follow');
     expect(status).toBe(404);
   });
 });

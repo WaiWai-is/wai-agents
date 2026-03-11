@@ -146,7 +146,7 @@ describe('CreateAgentConversationInput schema', () => {
 
 describe('ReadConversationInput schema', () => {
   it('accepts valid input with defaults', () => {
-    const result = ReadConversationInput.safeParse({ conversation_id: CONV_ID });
+    const result = ReadConversationInput.safeParse({ conversation_id: CONV_ID, agent_id: AGENT_ID_1 });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.limit).toBe(20);
@@ -154,13 +154,14 @@ describe('ReadConversationInput schema', () => {
   });
 
   it('rejects invalid UUID', () => {
-    const result = ReadConversationInput.safeParse({ conversation_id: 'bad' });
+    const result = ReadConversationInput.safeParse({ conversation_id: 'bad', agent_id: AGENT_ID_1 });
     expect(result.success).toBe(false);
   });
 
   it('rejects limit over 100', () => {
     const result = ReadConversationInput.safeParse({
       conversation_id: CONV_ID,
+      agent_id: AGENT_ID_1,
       limit: 101,
     });
     expect(result.success).toBe(false);
@@ -347,27 +348,45 @@ describe('handleReadConversation', () => {
         created_at: '2025-01-01T00:00:00Z',
       },
     ];
-    vi.mocked(sql).mockReturnValue(mockSql(mockMessages, 2));
+    vi.mocked(sql)
+      .mockReturnValueOnce(mockSql([{ id: 'member-id' }], 1))  // membership check
+      .mockReturnValueOnce(mockSql(mockMessages, 2));            // messages query
 
     const result = await handleReadConversation({
       conversation_id: CONV_ID,
+      agent_id: AGENT_ID_1,
       limit: 20,
     });
 
     expect(result.messages).toHaveLength(2);
     expect(result.messages[0].content).toBe('Hello from agent 1');
-    expect(sql).toHaveBeenCalledTimes(1);
+    expect(sql).toHaveBeenCalledTimes(2);
   });
 
   it('returns empty array when no messages', async () => {
-    vi.mocked(sql).mockReturnValue(mockSql([], 0));
+    vi.mocked(sql)
+      .mockReturnValueOnce(mockSql([{ id: 'member-id' }], 1))  // membership check
+      .mockReturnValueOnce(mockSql([], 0));                      // messages query
 
     const result = await handleReadConversation({
       conversation_id: CONV_ID,
+      agent_id: AGENT_ID_1,
       limit: 20,
     });
 
     expect(result.messages).toHaveLength(0);
+  });
+
+  it('throws when agent is not a member', async () => {
+    vi.mocked(sql).mockReturnValueOnce(mockSql([], 0));  // no membership
+
+    await expect(
+      handleReadConversation({
+        conversation_id: CONV_ID,
+        agent_id: AGENT_ID_1,
+        limit: 20,
+      }),
+    ).rejects.toThrow(`Agent ${AGENT_ID_1} is not a member of conversation ${CONV_ID}`);
   });
 });
 

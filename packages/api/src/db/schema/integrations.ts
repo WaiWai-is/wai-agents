@@ -8,17 +8,11 @@ import {
   jsonb,
   timestamp,
   uniqueIndex,
-  customType,
 } from 'drizzle-orm/pg-core';
+import { bytea } from './custom-types.js';
 import { users } from './users.js';
 import { agents } from './agents.js';
 import { conversations } from './conversations.js';
-
-const bytea = customType<{ data: Buffer; driverData: Buffer }>({
-  dataType() {
-    return 'bytea';
-  },
-});
 
 export const bridgeConnections = pgTable(
   'bridge_connections',

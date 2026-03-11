@@ -1,11 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { sql } from '../../db/connection.js';
-
-function toISO(val: unknown): string | null {
-  if (!val) return null;
-  const d = val instanceof Date ? val : new Date(String(val));
-  return isNaN(d.getTime()) ? null : d.toISOString();
-}
+import { toISO } from '../../lib/utils.js';
 
 /* -------------------------------------------------------------------------- */
 /*  Helpers                                                                   */
@@ -233,25 +228,41 @@ export async function likeFeedItem(feedItemId: string, userId: string) {
     throw Object.assign(new Error('Feed item not found'), { code: 'NOT_FOUND' });
   }
 
-  // Insert like (ON CONFLICT for idempotency)
-  await sql`
-    INSERT INTO feed_likes (id, feed_item_id, user_id, inserted_at)
-    VALUES (${randomUUID()}, ${feedItemId}, ${userId}, NOW())
-    ON CONFLICT (feed_item_id, user_id) DO NOTHING
-  `;
+  // @ts-expect-error postgres.js TransactionSql type lacks call signatures but works at runtime
+  return await sql.begin(async (tx: typeof sql) => {
+    // Insert like (ON CONFLICT for idempotency)
+    await tx`
+      INSERT INTO feed_likes (id, feed_item_id, user_id, inserted_at)
+      VALUES (${randomUUID()}, ${feedItemId}, ${userId}, NOW())
+      ON CONFLICT (feed_item_id, user_id) DO NOTHING
+    `;
 
-  // Increment like_count
-  const rows = await sql`
-    UPDATE feed_items
-    SET like_count = (SELECT COUNT(*)::int FROM feed_likes WHERE feed_item_id = ${feedItemId}),
-        updated_at = NOW()
-    WHERE id = ${feedItemId}
-    RETURNING id, creator_id, type, reference_id, reference_type, title, description,
-              thumbnail_url, quality_score, trending_score, like_count, fork_count,
-              view_count, inserted_at, updated_at
-  `;
+    // Recount like_count and return full feed item with creator info
+    const rows = await tx`
+      UPDATE feed_items
+      SET like_count = (SELECT COUNT(*)::int FROM feed_likes WHERE feed_item_id = ${feedItemId}),
+          updated_at = NOW()
+      WHERE id = ${feedItemId}
+      RETURNING id, creator_id, type, reference_id, reference_type, title, description,
+                thumbnail_url, quality_score, trending_score, like_count, fork_count,
+                view_count, inserted_at, updated_at
+    `;
 
-  return rows[0] as Record<string, unknown>;
+    const fi = rows[0] as Record<string, unknown>;
+    const creatorId = fi['creator_id'] as string;
+    const creatorRows = await tx`
+      SELECT username, display_name, avatar_url FROM users WHERE id = ${creatorId} LIMIT 1
+    `;
+    const creator = creatorRows[0] as Record<string, unknown> | undefined;
+
+    return formatFeedItem({
+      ...fi,
+      username: creator?.['username'] ?? null,
+      display_name: creator?.['display_name'] ?? null,
+      avatar_url: creator?.['avatar_url'] ?? null,
+      liked_by_me: true,
+    });
+  });
 }
 
 export async function unlikeFeedItem(feedItemId: string, userId: string) {
@@ -263,18 +274,21 @@ export async function unlikeFeedItem(feedItemId: string, userId: string) {
     throw Object.assign(new Error('Feed item not found'), { code: 'NOT_FOUND' });
   }
 
-  // Delete like
-  await sql`
-    DELETE FROM feed_likes WHERE feed_item_id = ${feedItemId} AND user_id = ${userId}
-  `;
+  // @ts-expect-error postgres.js TransactionSql type lacks call signatures but works at runtime
+  await sql.begin(async (tx: typeof sql) => {
+    // Delete like
+    await tx`
+      DELETE FROM feed_likes WHERE feed_item_id = ${feedItemId} AND user_id = ${userId}
+    `;
 
-  // Update like_count
-  await sql`
-    UPDATE feed_items
-    SET like_count = (SELECT COUNT(*)::int FROM feed_likes WHERE feed_item_id = ${feedItemId}),
-        updated_at = NOW()
-    WHERE id = ${feedItemId}
-  `;
+    // Update like_count
+    await tx`
+      UPDATE feed_items
+      SET like_count = (SELECT COUNT(*)::int FROM feed_likes WHERE feed_item_id = ${feedItemId}),
+          updated_at = NOW()
+      WHERE id = ${feedItemId}
+    `;
+  });
 }
 
 /* -------------------------------------------------------------------------- */
@@ -282,7 +296,7 @@ export async function unlikeFeedItem(feedItemId: string, userId: string) {
 /* -------------------------------------------------------------------------- */
 
 export async function forkAgent(agentId: string, userId: string) {
-  // Get the source agent
+  // Get the source agent (outside transaction — read-only)
   const agentRows = await sql`
     SELECT id, name, slug, description, avatar_url, system_prompt, model,
            temperature, max_tokens, tools, mcp_servers, visibility, category, metadata
@@ -319,67 +333,70 @@ export async function forkAgent(agentId: string, userId: string) {
   const toolsJson = JSON.stringify(source['tools'] ?? []);
   const mcpServersJson = JSON.stringify(source['mcp_servers'] ?? []);
 
-  await sql`
-    INSERT INTO agents (
-      id, creator_id, name, slug, description, avatar_url, system_prompt, model,
-      temperature, max_tokens, tools, mcp_servers, visibility, category, metadata,
-      inserted_at, updated_at
-    ) VALUES (
-      ${newAgentId}, ${userId}, ${source['name'] as string}, ${slug},
-      ${source['description'] as string | null}, ${source['avatar_url'] as string | null},
-      ${source['system_prompt'] as string}, ${source['model'] as string},
-      ${source['temperature'] as number}, ${source['max_tokens'] as number},
-      ${toolsJson}::jsonb, ${mcpServersJson}::jsonb,
-      'private', ${source['category'] as string | null},
-      ${newMetadata}::jsonb, ${now}, ${now}
-    )
-  `;
+  // @ts-expect-error postgres.js TransactionSql type lacks call signatures but works at runtime
+  return await sql.begin(async (tx: typeof sql) => {
+    await tx`
+      INSERT INTO agents (
+        id, creator_id, name, slug, description, avatar_url, system_prompt, model,
+        temperature, max_tokens, tools, mcp_servers, visibility, category, metadata,
+        inserted_at, updated_at
+      ) VALUES (
+        ${newAgentId}, ${userId}, ${source['name'] as string}, ${slug},
+        ${source['description'] as string | null}, ${source['avatar_url'] as string | null},
+        ${source['system_prompt'] as string}, ${source['model'] as string},
+        ${source['temperature'] as number}, ${source['max_tokens'] as number},
+        ${toolsJson}::jsonb, ${mcpServersJson}::jsonb,
+        'private', ${source['category'] as string | null},
+        ${newMetadata}::jsonb, ${now}, ${now}
+      )
+    `;
 
-  // Increment fork_count on feed items referencing the source agent
-  await sql`
-    UPDATE feed_items
-    SET fork_count = fork_count + 1, updated_at = NOW()
-    WHERE reference_id = ${agentId} AND reference_type = 'agent'
-  `;
+    // Increment fork_count on feed items referencing the source agent
+    await tx`
+      UPDATE feed_items
+      SET fork_count = fork_count + 1, updated_at = NOW()
+      WHERE reference_id = ${agentId} AND reference_type = 'agent'
+    `;
 
-  // Create a feed item for the fork
-  const feedItemId = randomUUID();
-  await sql`
-    INSERT INTO feed_items (
-      id, creator_id, type, reference_id, reference_type, title, description,
-      inserted_at, updated_at
-    ) VALUES (
-      ${feedItemId}, ${userId}, 'fork', ${newAgentId}, 'agent',
-      ${source['name'] as string}, ${source['description'] as string | null},
-      ${now}, ${now}
-    )
-  `;
+    // Create a feed item for the fork
+    const feedItemId = randomUUID();
+    await tx`
+      INSERT INTO feed_items (
+        id, creator_id, type, reference_id, reference_type, title, description,
+        inserted_at, updated_at
+      ) VALUES (
+        ${feedItemId}, ${userId}, 'fork', ${newAgentId}, 'agent',
+        ${source['name'] as string}, ${source['description'] as string | null},
+        ${now}, ${now}
+      )
+    `;
 
-  // Return the new agent
-  const rows = await sql`
-    SELECT id, creator_id, name, slug, description, avatar_url, system_prompt, model,
-           temperature, max_tokens, tools, mcp_servers, visibility, category,
-           usage_count, rating_sum, rating_count, execution_mode, metadata,
-           inserted_at, updated_at
-    FROM agents WHERE id = ${newAgentId}
-  `;
+    // Return the new agent
+    const rows = await tx`
+      SELECT id, creator_id, name, slug, description, avatar_url, system_prompt, model,
+             temperature, max_tokens, tools, mcp_servers, visibility, category,
+             COALESCE(usage_count, 0)::int AS usage_count, rating_sum, rating_count, metadata,
+             inserted_at, updated_at
+      FROM agents WHERE id = ${newAgentId}
+    `;
 
-  const row = rows[0] as Record<string, unknown>;
-  return {
-    id: row['id'],
-    creator_id: row['creator_id'],
-    name: row['name'],
-    slug: row['slug'],
-    description: row['description'],
-    avatar_url: row['avatar_url'],
-    system_prompt: row['system_prompt'],
-    model: row['model'],
-    visibility: row['visibility'],
-    category: row['category'],
-    metadata: row['metadata'],
-    created_at: toISO(row['inserted_at']),
-    updated_at: toISO(row['updated_at']),
-  };
+    const row = rows[0] as Record<string, unknown>;
+    return {
+      id: row['id'],
+      creator_id: row['creator_id'],
+      name: row['name'],
+      slug: row['slug'],
+      description: row['description'],
+      avatar_url: row['avatar_url'],
+      system_prompt: row['system_prompt'],
+      model: row['model'],
+      visibility: row['visibility'],
+      category: row['category'],
+      metadata: row['metadata'],
+      created_at: toISO(row['inserted_at']),
+      updated_at: toISO(row['updated_at']),
+    };
+  });
 }
 
 /* -------------------------------------------------------------------------- */
@@ -477,10 +494,10 @@ export async function listMarketplace(userId: string, cursor?: string, limit?: n
 
 export async function searchMarketplace(query: string, userId: string, cursor?: string, limit?: number) {
   const clampedLimit = clampLimit(limit);
-  const searchPattern = `%${query}%`;
+  const escapedQuery = query.replace(/[%_\\]/g, '\\$&');
+  const searchPattern = `%${escapedQuery}%`;
 
   if (cursor) {
-    const cursorAt = await getCursorInsertedAt(cursor);
     // Cursor for search uses inserted_at from the agents table directly
     const cursorRows = await sql`
       SELECT inserted_at FROM agents WHERE id = ${cursor} LIMIT 1
@@ -575,7 +592,7 @@ export async function getMarketplaceAgent(slugOrId: string) {
     model: row['model'],
     visibility: row['visibility'],
     category: row['category'],
-    usage_count: row['usage_count'],
+    usage_count: Number(row['usage_count']),
     rating_sum: row['rating_sum'],
     rating_count: row['rating_count'],
     rating_avg: row['rating_avg'],
@@ -626,67 +643,70 @@ export async function rateAgent(
     throw Object.assign(new Error('Agent not found'), { code: 'NOT_FOUND' });
   }
 
-  // Upsert rating
-  const existingRows = await sql`
-    SELECT id, rating AS old_rating FROM agent_ratings
-    WHERE agent_id = ${agentId} AND user_id = ${userId}
-    LIMIT 1
-  `;
-
-  if (existingRows.length > 0) {
-    const existing = existingRows[0] as Record<string, unknown>;
-    const oldRating = existing['old_rating'] as number;
-    const ratingDiff = rating - oldRating;
-
-    await sql`
-      UPDATE agent_ratings
-      SET rating = ${rating}, review = ${review ?? null},
-          accuracy_score = ${dimensionalScores?.accuracy_score ?? null},
-          helpfulness_score = ${dimensionalScores?.helpfulness_score ?? null},
-          speed_score = ${dimensionalScores?.speed_score ?? null},
-          conversation_id = ${dimensionalScores?.conversation_id ?? null},
-          message_id = ${dimensionalScores?.message_id ?? null},
-          inserted_at = NOW()
+  // @ts-expect-error postgres.js TransactionSql type lacks call signatures but works at runtime
+  return await sql.begin(async (tx: typeof sql) => {
+    // Upsert rating
+    const existingRows = await tx`
+      SELECT id, rating AS old_rating FROM agent_ratings
       WHERE agent_id = ${agentId} AND user_id = ${userId}
+      LIMIT 1
     `;
 
-    await sql`
-      UPDATE agents
-      SET rating_sum = rating_sum + ${ratingDiff}, updated_at = NOW()
-      WHERE id = ${agentId}
-    `;
-  } else {
-    await sql`
-      INSERT INTO agent_ratings (id, agent_id, user_id, rating, review, accuracy_score, helpfulness_score, speed_score, conversation_id, message_id, inserted_at)
-      VALUES (${randomUUID()}, ${agentId}, ${userId}, ${rating}, ${review ?? null},
-        ${dimensionalScores?.accuracy_score ?? null}, ${dimensionalScores?.helpfulness_score ?? null},
-        ${dimensionalScores?.speed_score ?? null}, ${dimensionalScores?.conversation_id ?? null},
-        ${dimensionalScores?.message_id ?? null}, NOW())
-    `;
+    if (existingRows.length > 0) {
+      const existing = existingRows[0] as Record<string, unknown>;
+      const oldRating = existing['old_rating'] as number;
+      const ratingDiff = rating - oldRating;
 
-    await sql`
-      UPDATE agents
-      SET rating_sum = rating_sum + ${rating},
-          rating_count = rating_count + 1,
-          updated_at = NOW()
-      WHERE id = ${agentId}
-    `;
-  }
+      await tx`
+        UPDATE agent_ratings
+        SET rating = ${rating}, review = ${review ?? null},
+            accuracy_score = ${dimensionalScores?.accuracy_score ?? null},
+            helpfulness_score = ${dimensionalScores?.helpfulness_score ?? null},
+            speed_score = ${dimensionalScores?.speed_score ?? null},
+            conversation_id = ${dimensionalScores?.conversation_id ?? null},
+            message_id = ${dimensionalScores?.message_id ?? null},
+            inserted_at = NOW()
+        WHERE agent_id = ${agentId} AND user_id = ${userId}
+      `;
 
-  // Return updated agent summary
-  const rows = await sql`
-    SELECT rating_sum, rating_count,
-           CASE WHEN rating_count > 0 THEN rating_sum::float / rating_count ELSE 0 END AS rating_avg
-    FROM agents WHERE id = ${agentId}
-  `;
-  const r = rows[0] as Record<string, unknown>;
-  return {
-    agent_id: agentId,
-    rating_sum: r['rating_sum'],
-    rating_count: r['rating_count'],
-    rating_avg: r['rating_avg'],
-    your_rating: rating,
-  };
+      await tx`
+        UPDATE agents
+        SET rating_sum = rating_sum + ${ratingDiff}, updated_at = NOW()
+        WHERE id = ${agentId}
+      `;
+    } else {
+      await tx`
+        INSERT INTO agent_ratings (id, agent_id, user_id, rating, review, accuracy_score, helpfulness_score, speed_score, conversation_id, message_id, inserted_at)
+        VALUES (${randomUUID()}, ${agentId}, ${userId}, ${rating}, ${review ?? null},
+          ${dimensionalScores?.accuracy_score ?? null}, ${dimensionalScores?.helpfulness_score ?? null},
+          ${dimensionalScores?.speed_score ?? null}, ${dimensionalScores?.conversation_id ?? null},
+          ${dimensionalScores?.message_id ?? null}, NOW())
+      `;
+
+      await tx`
+        UPDATE agents
+        SET rating_sum = rating_sum + ${rating},
+            rating_count = rating_count + 1,
+            updated_at = NOW()
+        WHERE id = ${agentId}
+      `;
+    }
+
+    // Return updated agent summary
+    const rows = await tx`
+      SELECT rating_sum, rating_count,
+             CASE WHEN rating_count > 0 THEN rating_sum::float / rating_count ELSE 0 END AS rating_avg
+      FROM agents WHERE id = ${agentId}
+    `;
+    const r = rows[0] as Record<string, unknown>;
+    return {
+      agent_id: agentId,
+      rating_sum: r['rating_sum'],
+      rating_count: r['rating_count'],
+      rating_avg: r['rating_avg'],
+      your_rating: rating,
+    };
+  });
 }
 
 /* -------------------------------------------------------------------------- */
@@ -734,7 +754,7 @@ function formatMarketplaceAgent(row: Record<string, unknown>) {
     model: row['model'],
     visibility: row['visibility'],
     category: row['category'],
-    usage_count: row['usage_count'],
+    usage_count: Number(row['usage_count']),
     rating_sum: row['rating_sum'],
     rating_count: row['rating_count'],
     rating_avg: row['rating_avg'],

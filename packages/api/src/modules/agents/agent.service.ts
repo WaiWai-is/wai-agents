@@ -1,13 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { sql } from '../../db/connection.js';
+import { toISO, formatConversation } from '../../lib/utils.js';
 import { getTemplate } from './templates.js';
 import type { CreateAgentInput, UpdateAgentInput } from './agent.schema.js';
-
-function toISO(val: unknown): string | null {
-  if (!val) return null;
-  const d = val instanceof Date ? val : new Date(String(val));
-  return isNaN(d.getTime()) ? null : d.toISOString();
-}
 
 function slugify(name: string): string {
   return name
@@ -90,9 +85,9 @@ export async function createAgent(userId: string, input: CreateAgentInput) {
     try {
       const template = getTemplate(input.template);
       systemPrompt = input.system_prompt ?? template.systemPrompt;
-      model = input.model ?? template.model;
-      tools = input.tools ?? (template.tools as unknown[]);
-      mcpServers = input.mcp_servers ?? (template.mcpServers as unknown[]);
+      model = input.model ?? (template.model as unknown as typeof model);
+      tools = input.tools ?? (template.tools as unknown as typeof tools);
+      mcpServers = input.mcp_servers ?? (template.mcpServers as unknown as typeof mcpServers);
       coreMemories = template.coreMemories;
     } catch {
       throw Object.assign(new Error(`Template '${input.template}' not found`), { code: 'BAD_REQUEST' });
@@ -230,15 +225,22 @@ export async function updateAgent(agentId: string, userId: string, updates: Upda
 
 export async function deleteAgent(agentId: string, userId: string) {
   await assertCreator(agentId, userId);
+  await sql`UPDATE conversations SET agent_id = NULL WHERE agent_id = ${agentId}`;
   await sql`DELETE FROM agents WHERE id = ${agentId}`;
 }
 
 export async function startConversation(agentId: string, userId: string) {
   // Verify agent exists
   const agentRows = await sql`
-    SELECT id FROM agents WHERE id = ${agentId} LIMIT 1
+    SELECT id, visibility, creator_id FROM agents WHERE id = ${agentId} LIMIT 1
   `;
   if (agentRows.length === 0) {
+    throw Object.assign(new Error('Agent not found'), { code: 'NOT_FOUND' });
+  }
+
+  // Block access to private agents the user doesn't own
+  const agentRow = agentRows[0] as Record<string, unknown>;
+  if (agentRow['visibility'] === 'private' && agentRow['creator_id'] !== userId) {
     throw Object.assign(new Error('Agent not found'), { code: 'NOT_FOUND' });
   }
 
@@ -277,21 +279,6 @@ export async function startConversation(agentId: string, userId: string) {
   `;
 
   return { conversation: formatConversation(rows[0] as Record<string, unknown>), created: true };
-}
-
-function formatConversation(row: Record<string, unknown>) {
-  return {
-    id: row['id'],
-    type: row['type'],
-    title: row['title'],
-    avatar_url: row['avatar_url'],
-    creator_id: row['creator_id'],
-    agent_id: row['agent_id'],
-    metadata: row['metadata'],
-    last_message_at: toISO(row['last_message_at']),
-    created_at: toISO(row['inserted_at']),
-    updated_at: toISO(row['updated_at']),
-  };
 }
 
 function formatAgentCard(row: Record<string, unknown>) {

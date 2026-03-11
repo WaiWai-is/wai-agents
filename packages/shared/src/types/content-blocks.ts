@@ -18,7 +18,7 @@ export type Step = z.infer<typeof StepSchema>;
 
 export const TextBlockSchema = z.object({
   type: z.literal('text'),
-  text: z.string(),
+  text: z.string().max(100000),
 });
 
 export const ToolCallBlockSchema = z.object({
@@ -26,6 +26,7 @@ export const ToolCallBlockSchema = z.object({
   name: z.string(),
   input: z.unknown(),
   status: z.enum(['running', 'done', 'error']),
+  call_id: z.string().optional(),
 });
 
 export const ToolResultBlockSchema = z.object({
@@ -33,6 +34,7 @@ export const ToolResultBlockSchema = z.object({
   name: z.string(),
   result: z.string(),
   duration_ms: z.number(),
+  is_error: z.boolean().optional(),
 });
 
 export const CodeBlockSchema = z.object({

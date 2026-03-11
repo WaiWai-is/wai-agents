@@ -1,29 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { sql } from '../../db/connection.js';
+import { toISO, formatConversation } from '../../lib/utils.js';
 import { emitMessage } from '../../ws/emitter.js';
 import { runAgentLoop } from '../agents/loop.js';
 import type { CreateConversationInput, UpdateConversationInput, AddMemberInput, SendMessageInput } from './conversation.schema.js';
-
-function toISO(val: unknown): string | null {
-  if (!val) return null;
-  const d = val instanceof Date ? val : new Date(String(val));
-  return isNaN(d.getTime()) ? null : d.toISOString();
-}
-
-function formatConversation(row: Record<string, unknown>) {
-  return {
-    id: row['id'],
-    type: row['type'],
-    title: row['title'],
-    avatar_url: row['avatar_url'],
-    creator_id: row['creator_id'],
-    agent_id: row['agent_id'],
-    metadata: row['metadata'],
-    last_message_at: toISO(row['last_message_at']),
-    created_at: toISO(row['inserted_at']),
-    updated_at: toISO(row['updated_at']),
-  };
-}
 
 function formatMessage(row: Record<string, unknown>) {
   return {
@@ -278,54 +258,59 @@ export async function sendMessage(
 ) {
   await assertMember(conversationId, userId);
 
-  // Check idempotency
-  const existing = await sql`
-    SELECT response_body FROM idempotency_keys
-    WHERE key = ${idempotencyKey} AND user_id = ${userId}
-    LIMIT 1
-  `;
-  if (existing.length > 0) {
-    return (existing[0] as Record<string, unknown>)['response_body'];
-  }
+  // @ts-expect-error postgres.js TransactionSql type lacks call signatures but works at runtime
+  const message = await sql.begin(async (tx: typeof sql) => {
+    // Check idempotency
+    const existing = await tx`
+      SELECT response_body FROM idempotency_keys
+      WHERE key = ${idempotencyKey} AND user_id = ${userId}
+      LIMIT 1
+    `;
+    if (existing.length > 0) {
+      return (existing[0] as Record<string, unknown>)['response_body'];
+    }
 
-  const messageId = randomUUID();
-  const now = new Date().toISOString();
-  const contentJson = JSON.stringify(input.content);
+    const messageId = randomUUID();
+    const now = new Date().toISOString();
+    const contentJson = JSON.stringify(input.content);
 
-  await sql`
-    INSERT INTO messages (id, conversation_id, sender_id, sender_type, type, content, metadata, created_at)
-    VALUES (${messageId}, ${conversationId}, ${userId}, 'human', 'text', ${contentJson}::jsonb, '{}', ${now})
-  `;
+    await tx`
+      INSERT INTO messages (id, conversation_id, sender_id, sender_type, type, content, metadata, created_at)
+      VALUES (${messageId}, ${conversationId}, ${userId}, 'human', 'text', ${contentJson}::jsonb, '{}', ${now})
+    `;
 
-  // Update conversation last_message_at
-  await sql`
-    UPDATE conversations SET last_message_at = ${now}, updated_at = NOW()
-    WHERE id = ${conversationId}
-  `;
+    // Update conversation last_message_at
+    await tx`
+      UPDATE conversations SET last_message_at = ${now}, updated_at = NOW()
+      WHERE id = ${conversationId}
+    `;
 
-  const rows = await sql`
-    SELECT id, conversation_id, sender_id, sender_type, type, content, metadata, edited_at, deleted_at, created_at
-    FROM messages WHERE id = ${messageId}
-  `;
+    const rows = await tx`
+      SELECT id, conversation_id, sender_id, sender_type, type, content, metadata, edited_at, deleted_at, created_at
+      FROM messages WHERE id = ${messageId}
+    `;
 
-  const message = formatMessage(rows[0] as Record<string, unknown>);
+    const msg = formatMessage(rows[0] as Record<string, unknown>);
 
-  // Emit WebSocket event
+    // Save idempotency key
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    await tx`
+      INSERT INTO idempotency_keys (id, key, user_id, response_code, response_body, expires_at, inserted_at)
+      VALUES (${randomUUID()}, ${idempotencyKey}, ${userId}, 201, ${JSON.stringify(msg)}::jsonb, ${expiresAt}, NOW())
+      ON CONFLICT (key, user_id) DO NOTHING
+    `;
+
+    return msg;
+  });
+
+  // Emit WebSocket event (outside transaction)
   try {
     emitMessage(conversationId, message);
   } catch {
     // Socket.IO may not be initialized in tests
   }
 
-  // Save idempotency key
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-  await sql`
-    INSERT INTO idempotency_keys (id, key, user_id, response_code, response_body, expires_at, inserted_at)
-    VALUES (${randomUUID()}, ${idempotencyKey}, ${userId}, 201, ${JSON.stringify(message)}::jsonb, ${expiresAt}, NOW())
-    ON CONFLICT (key, user_id) DO NOTHING
-  `;
-
-  // Trigger agent loop if this is an agent conversation
+  // Trigger agent loop if this is an agent conversation (outside transaction)
   const convRows = await sql`
     SELECT agent_id FROM conversations WHERE id = ${conversationId} AND type = 'agent' AND agent_id IS NOT NULL LIMIT 1
   `;

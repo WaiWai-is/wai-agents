@@ -3,11 +3,12 @@ import { promisify } from 'node:util';
 import * as argon2 from 'argon2';
 import { SignJWT, jwtVerify } from 'jose';
 import { sql } from '../../db/connection.js';
+import { toISO } from '../../lib/utils.js';
 import type { RegisterInput, LoginInput } from './auth.schema.js';
 
 const scryptAsync = promisify(scrypt);
 
-const JWT_SECRET_VALUE =
+export const JWT_SECRET_STRING =
   process.env.JWT_SECRET ||
   (process.env.NODE_ENV === 'production'
     ? (() => {
@@ -15,12 +16,10 @@ const JWT_SECRET_VALUE =
       })()
     : 'dev-secret-wai-agents-change-in-production');
 
-const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_VALUE);
+const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_STRING);
 
 export async function hashPassword(password: string): Promise<string> {
-  const salt = randomBytes(16).toString('hex');
-  const hash = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${salt}:${hash.toString('hex')}`;
+  return argon2.hash(password, { type: argon2.argon2id });
 }
 
 export async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
@@ -79,12 +78,6 @@ export async function verifyRefreshToken(token: string): Promise<{ sub: string }
     throw new Error('Invalid refresh token');
   }
   return { sub: payload.sub };
-}
-
-function toISO(val: unknown): string | null {
-  if (!val) return null;
-  const d = val instanceof Date ? val : new Date(String(val));
-  return isNaN(d.getTime()) ? null : d.toISOString();
 }
 
 function formatUser(row: Record<string, unknown>) {
@@ -195,19 +188,10 @@ export async function createMagicLink(email: string): Promise<{ token: string }>
   const token = randomBytes(32).toString('base64url');
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 minutes
 
-  // Find user by email (magic links only for existing users)
-  const userRows = await sql`SELECT id FROM users WHERE email = ${email} LIMIT 1`;
-  if (userRows.length === 0) {
-    // Return a token anyway to avoid email enumeration
-    return { token };
-  }
-
-  const userId = (userRows[0] as Record<string, unknown>)['id'] as string;
-
   // Store token in magic_link_tokens table
   await sql`
-    INSERT INTO magic_link_tokens (user_id, token, expires_at, used, inserted_at)
-    VALUES (${userId}, ${token}, ${expiresAt}, false, NOW())
+    INSERT INTO magic_link_tokens (email, token, expires_at, used, inserted_at)
+    VALUES (${email}, ${token}, ${expiresAt}, false, NOW())
   `;
 
   return { token };
@@ -217,10 +201,10 @@ export async function verifyMagicLink(
   token: string,
 ): Promise<{ user: ReturnType<typeof formatUser>; tokens: { access_token: string; refresh_token: string; expires_in: number } }> {
   const rows = await sql`
-    SELECT mlt.id AS token_id, mlt.user_id, mlt.expires_at, mlt.used,
+    SELECT mlt.id AS token_id, mlt.expires_at, mlt.used,
            u.id, u.username, u.display_name, u.email, u.avatar_url, u.bio, u.status, u.role, u.settings, u.plan, u.inserted_at, u.updated_at
     FROM magic_link_tokens mlt
-    JOIN users u ON u.id = mlt.user_id
+    JOIN users u ON u.email = mlt.email
     WHERE mlt.token = ${token}
     LIMIT 1
   `;

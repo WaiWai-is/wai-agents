@@ -10,8 +10,6 @@ export const RateAgentSchema = z.object({
   message_id: z.string().uuid().optional(),
 });
 
-export const ForkAgentSchema = z.object({});
-
 export const MessageFeedbackSchema = z.object({
   feedback: z.enum(['positive', 'negative']),
   reason: z.string().max(30).optional(),

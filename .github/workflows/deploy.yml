@@ -1,0 +1,24 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - run: mkdir -p ~/.ssh && echo "${{ secrets.SSH_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+      - run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'DEPLOY'
+            cd /opt/wai-agents
+            git pull origin main
+            pnpm install --frozen-lockfile
+            pnpm -r build
+            sudo systemctl restart waiagents-api waiagents-web waiagents-mcp-memory waiagents-mcp-web-search waiagents-mcp-pr-tools waiagents-mcp-agent-comm
+          DEPLOY

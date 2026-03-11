@@ -26,7 +26,11 @@ function renderInlineMarkdown(text: string): string {
   // Links
   result = result.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
-    '<a href="$2" target="_blank" rel="noopener noreferrer" class="cb-link">$1</a>'
+    (_, text, url) => {
+      // Sanitize URL - only allow http, https, mailto
+      const sanitizedUrl = /^(https?:|mailto:)/i.test(url) ? url : '#';
+      return `<a href="${sanitizedUrl}" target="_blank" rel="noopener noreferrer" class="cb-link">${text}</a>`;
+    }
   );
   // Line breaks
   result = result.replace(/\n/g, "<br/>");

@@ -16,16 +16,16 @@ async function seed() {
   console.log('\n--- Creating users ---');
 
   const userAttrs = [
-    { username: 'alex_dev', display_name: 'Alex Chen', email: 'alex@waiagents.com', bio: 'Full-stack developer. Building tools that make developers\' lives easier.' },
-    { username: 'maya_writer', display_name: 'Maya Johnson', email: 'maya@waiagents.com', bio: 'Content creator and copywriter. Words are my superpower.' },
-    { username: 'sam_designer', display_name: 'Sam Rivera', email: 'sam@waiagents.com', bio: 'UI/UX designer and illustrator. Making the web beautiful.' },
-    { username: 'jordan_student', display_name: 'Jordan Park', email: 'jordan@waiagents.com', bio: 'CS student. Learning something new every day.' },
-    { username: 'taylor_data', display_name: 'Taylor Kim', email: 'taylor@waiagents.com', bio: 'Data scientist. Finding stories hidden in numbers.' },
-    { username: 'riley_pm', display_name: 'Riley Morgan', email: 'riley@waiagents.com', bio: 'Product manager. Shipping great products, one sprint at a time.' },
-    { username: 'casey_research', display_name: 'Casey Williams', email: 'casey@waiagents.com', bio: 'PhD researcher in NLP. Exploring the frontiers of language AI.' },
-    { username: 'morgan_maker', display_name: 'Morgan Lee', email: 'morgan@waiagents.com', bio: 'Indie maker. I ship something new every week.' },
-    { username: 'avery_teacher', display_name: 'Avery Thompson', email: 'avery@waiagents.com', bio: 'High school CS teacher. Inspiring the next generation of coders.' },
-    { username: 'quinn_admin', display_name: 'Quinn Davis', email: 'quinn@waiagents.com', bio: 'Platform moderator. Keeping the community safe and welcoming.' },
+    { username: 'alex_dev', display_name: 'Alex Chen', email: 'alex@openraccoon.com', bio: 'Full-stack developer. Building tools that make developers\' lives easier.' },
+    { username: 'maya_writer', display_name: 'Maya Johnson', email: 'maya@openraccoon.com', bio: 'Content creator and copywriter. Words are my superpower.' },
+    { username: 'sam_designer', display_name: 'Sam Rivera', email: 'sam@openraccoon.com', bio: 'UI/UX designer and illustrator. Making the web beautiful.' },
+    { username: 'jordan_student', display_name: 'Jordan Park', email: 'jordan@openraccoon.com', bio: 'CS student. Learning something new every day.' },
+    { username: 'taylor_data', display_name: 'Taylor Kim', email: 'taylor@openraccoon.com', bio: 'Data scientist. Finding stories hidden in numbers.' },
+    { username: 'riley_pm', display_name: 'Riley Morgan', email: 'riley@openraccoon.com', bio: 'Product manager. Shipping great products, one sprint at a time.' },
+    { username: 'casey_research', display_name: 'Casey Williams', email: 'casey@openraccoon.com', bio: 'PhD researcher in NLP. Exploring the frontiers of language AI.' },
+    { username: 'morgan_maker', display_name: 'Morgan Lee', email: 'morgan@openraccoon.com', bio: 'Indie maker. I ship something new every week.' },
+    { username: 'avery_teacher', display_name: 'Avery Thompson', email: 'avery@openraccoon.com', bio: 'High school CS teacher. Inspiring the next generation of coders.' },
+    { username: 'quinn_admin', display_name: 'Quinn Davis', email: 'quinn@openraccoon.com', bio: 'Platform moderator. Keeping the community safe and welcoming.' },
   ];
 
   const passwordHash = await hashPassword('TestPass123!');

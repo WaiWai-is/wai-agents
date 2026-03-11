@@ -54,6 +54,8 @@ server.tool(
 
 // ─── HTTP Server ──────────────────────────────────────────────────────────────
 
+const MCP_API_KEY = process.env.MCP_API_KEY;
+
 const transport = new StreamableHTTPServerTransport({
   sessionIdGenerator: undefined, // stateless mode
 });
@@ -69,6 +71,15 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
     req.url === '/mcp' &&
     (req.method === 'POST' || req.method === 'GET' || req.method === 'DELETE')
   ) {
+    if (MCP_API_KEY) {
+      const authHeader = (req.headers['authorization'] || req.headers['x-api-key']) as string | undefined;
+      const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+      if (token !== MCP_API_KEY) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Unauthorized' }));
+        return;
+      }
+    }
     await transport.handleRequest(req, res);
     return;
   }

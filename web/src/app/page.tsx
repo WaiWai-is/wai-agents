@@ -1,16 +1,68 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
-import { createRaccoonApi } from "@/lib/api";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import dynamic from "next/dynamic";
+import { createWaiAgentsApi } from "@/lib/api";
 import { useSessionStore } from "@/lib/state";
 import type { SessionUser } from "@/lib/state/session-store";
 import { AuthView } from "@/features/auth";
-import { AgentBuilderView } from "@/features/agent-builder";
-import { ChatView } from "@/features/chat";
-import { FeedView } from "@/features/feed";
-import { PagesView } from "@/features/pages";
-import { MarketplaceView } from "@/features/marketplace";
 import { SettingsView } from "@/features/settings";
+
+const ChatView = dynamic(
+  () => import("@/features/chat").then((m) => ({ default: m.ChatView })),
+  { loading: () => <div className="view-loading">Loading...</div> }
+);
+
+const AgentBuilderView = dynamic(
+  () => import("@/features/agent-builder").then((m) => ({ default: m.AgentBuilderView })),
+  { loading: () => <div className="view-loading">Loading...</div> }
+);
+
+const FeedView = dynamic(
+  () => import("@/features/feed").then((m) => ({ default: m.FeedView })),
+  { loading: () => <div className="view-loading">Loading...</div> }
+);
+
+const MarketplaceView = dynamic(
+  () => import("@/features/marketplace").then((m) => ({ default: m.MarketplaceView })),
+  { loading: () => <div className="view-loading">Loading...</div> }
+);
+
+const PagesView = dynamic(
+  () => import("@/features/pages").then((m) => ({ default: m.PagesView })),
+  { loading: () => <div className="view-loading">Loading...</div> }
+);
+
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback?: React.ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error("UI Error:", error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        this.props.fallback || (
+          <div style={{ padding: 40, textAlign: "center" }}>
+            <h2>Something went wrong</h2>
+            <button onClick={() => this.setState({ hasError: false })}>
+              Try again
+            </button>
+          </div>
+        )
+      );
+    }
+    return this.props.children;
+  }
+}
 
 type Tab = "chats" | "agents" | "feed" | "pages" | "marketplace" | "settings";
 
@@ -25,7 +77,7 @@ const TABS: Array<{ key: Tab; label: string; icon: string }> = [
 
 export default function HomePage() {
   const api = useMemo(
-    () => createRaccoonApi(() => useSessionStore.getState().accessToken),
+    () => createWaiAgentsApi(() => useSessionStore.getState().accessToken),
     []
   );
 
@@ -188,46 +240,62 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="app-main">
         {activeTab === "chats" && (
-          <ChatView
-            api={api}
-            accessToken={accessToken}
-            currentUser={user}
-            focusConversationId={focusConversationId}
-            onConversationFocused={() => {
-              if (focusConversationId) setFocusConversationId(null);
-            }}
-          />
+          <ErrorBoundary>
+            <ChatView
+              api={api}
+              accessToken={accessToken}
+              currentUser={user}
+              focusConversationId={focusConversationId}
+              onConversationFocused={() => {
+                if (focusConversationId) setFocusConversationId(null);
+              }}
+            />
+          </ErrorBoundary>
         )}
 
         {activeTab === "agents" && (
-          <AgentBuilderView api={api} accessToken={accessToken} currentUser={user} />
+          <ErrorBoundary>
+            <AgentBuilderView api={api} accessToken={accessToken} currentUser={user} />
+          </ErrorBoundary>
         )}
 
-        {activeTab === "feed" && <FeedView api={api} currentUser={user} />}
+        {activeTab === "feed" && (
+          <ErrorBoundary>
+            <FeedView api={api} currentUser={user} />
+          </ErrorBoundary>
+        )}
 
-        {activeTab === "pages" && <PagesView api={api} currentUser={user} />}
+        {activeTab === "pages" && (
+          <ErrorBoundary>
+            <PagesView api={api} currentUser={user} />
+          </ErrorBoundary>
+        )}
 
         {activeTab === "marketplace" && (
-          <MarketplaceView
-            api={api}
-            currentUser={user}
-            onOpenConversation={handleStartAgentConversation}
-          />
+          <ErrorBoundary>
+            <MarketplaceView
+              api={api}
+              currentUser={user}
+              onOpenConversation={handleStartAgentConversation}
+            />
+          </ErrorBoundary>
         )}
 
         {activeTab === "settings" && (
-          <SettingsView
-            api={api}
-            user={user}
-            onUserUpdated={(nextUser) => {
-              setSession({
-                accessToken,
-                refreshToken: refreshToken ?? undefined,
-                user: nextUser,
-              });
-            }}
-            onLogout={() => void onLogout()}
-          />
+          <ErrorBoundary>
+            <SettingsView
+              api={api}
+              user={user}
+              onUserUpdated={(nextUser) => {
+                setSession({
+                  accessToken,
+                  refreshToken: refreshToken ?? undefined,
+                  user: nextUser,
+                });
+              }}
+              onLogout={() => void onLogout()}
+            />
+          </ErrorBoundary>
         )}
       </main>
 

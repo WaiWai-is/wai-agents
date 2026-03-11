@@ -133,13 +133,13 @@ describe('SearchMemoriesInput schema', () => {
 });
 
 describe('ForgetMemoryInput schema', () => {
-  it('accepts valid UUID', () => {
-    const result = ForgetMemoryInput.safeParse({ memory_id: MEMORY_ID });
+  it('accepts valid UUIDs', () => {
+    const result = ForgetMemoryInput.safeParse({ memory_id: MEMORY_ID, agent_id: AGENT_ID, user_id: USER_ID });
     expect(result.success).toBe(true);
   });
 
   it('rejects invalid UUID', () => {
-    const result = ForgetMemoryInput.safeParse({ memory_id: 'bad-id' });
+    const result = ForgetMemoryInput.safeParse({ memory_id: 'bad-id', agent_id: AGENT_ID, user_id: USER_ID });
     expect(result.success).toBe(false);
   });
 });
@@ -148,6 +148,8 @@ describe('UpdateMemoryInput schema', () => {
   it('accepts partial updates', () => {
     const result = UpdateMemoryInput.safeParse({
       memory_id: MEMORY_ID,
+      agent_id: AGENT_ID,
+      user_id: USER_ID,
       importance: 0.8,
     });
     expect(result.success).toBe(true);
@@ -156,6 +158,8 @@ describe('UpdateMemoryInput schema', () => {
   it('accepts content-only update', () => {
     const result = UpdateMemoryInput.safeParse({
       memory_id: MEMORY_ID,
+      agent_id: AGENT_ID,
+      user_id: USER_ID,
       content: 'Updated content',
     });
     expect(result.success).toBe(true);
@@ -164,6 +168,8 @@ describe('UpdateMemoryInput schema', () => {
   it('rejects empty content', () => {
     const result = UpdateMemoryInput.safeParse({
       memory_id: MEMORY_ID,
+      agent_id: AGENT_ID,
+      user_id: USER_ID,
       content: '',
     });
     expect(result.success).toBe(false);
@@ -269,7 +275,7 @@ describe('handleForgetMemory', () => {
       mockSql([], 1),
     );
 
-    const result = await handleForgetMemory({ memory_id: MEMORY_ID });
+    const result = await handleForgetMemory({ memory_id: MEMORY_ID, agent_id: AGENT_ID, user_id: USER_ID });
 
     expect(sql).toHaveBeenCalledTimes(1);
     expect(result.deleted).toBe(true);
@@ -280,14 +286,14 @@ describe('handleForgetMemory', () => {
       mockSql([], 0),
     );
 
-    const result = await handleForgetMemory({ memory_id: MEMORY_ID });
+    const result = await handleForgetMemory({ memory_id: MEMORY_ID, agent_id: AGENT_ID, user_id: USER_ID });
     expect(result.deleted).toBe(false);
   });
 });
 
 describe('handleUpdateMemory', () => {
   it('returns updated false when no fields provided', async () => {
-    const result = await handleUpdateMemory({ memory_id: MEMORY_ID });
+    const result = await handleUpdateMemory({ memory_id: MEMORY_ID, agent_id: AGENT_ID, user_id: USER_ID });
     expect(result.updated).toBe(false);
     expect(sql).not.toHaveBeenCalled();
   });
@@ -299,6 +305,8 @@ describe('handleUpdateMemory', () => {
 
     const result = await handleUpdateMemory({
       memory_id: MEMORY_ID,
+      agent_id: AGENT_ID,
+      user_id: USER_ID,
       content: 'Updated preference',
     });
 
@@ -313,6 +321,8 @@ describe('handleUpdateMemory', () => {
 
     const result = await handleUpdateMemory({
       memory_id: MEMORY_ID,
+      agent_id: AGENT_ID,
+      user_id: USER_ID,
       importance: 0.9,
     });
 
@@ -327,6 +337,8 @@ describe('handleUpdateMemory', () => {
 
     const result = await handleUpdateMemory({
       memory_id: MEMORY_ID,
+      agent_id: AGENT_ID,
+      user_id: USER_ID,
       importance: 0.5,
     });
 

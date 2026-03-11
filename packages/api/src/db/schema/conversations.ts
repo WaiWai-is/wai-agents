@@ -18,7 +18,7 @@ export const conversations = pgTable('conversations', {
   title: varchar('title', { length: 255 }),
   avatarUrl: text('avatar_url'),
   creatorId: uuid('creator_id').references(() => users.id, { onDelete: 'set null' }),
-  agentId: uuid('agent_id').references(() => agents.id),
+  agentId: uuid('agent_id').references(() => agents.id, { onDelete: 'set null' }),
   bridgeId: uuid('bridge_id'),
   metadata: jsonb('metadata').default({}),
   lastMessageAt: timestamp('last_message_at', { withTimezone: true }),

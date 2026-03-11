@@ -1,6 +1,6 @@
 import postgres from 'postgres';
 
-const connectionString =
-  process.env.DATABASE_URL || 'postgres://waiagents:waiagents@localhost:5432/wai_agents_prod';
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) throw new Error('DATABASE_URL environment variable is required');
 
-export const sql = postgres(connectionString, { max: 5 });
+export const sql = postgres(DATABASE_URL, { max: 5 });

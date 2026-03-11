@@ -13,6 +13,7 @@ interface McpToolWithServer extends McpTool {
 export class McpManager {
   private tools: McpToolWithServer[] = [];
   private servers: McpServerConfig[] = [];
+  private apiKey: string | undefined = process.env.MCP_API_KEY;
 
   async connect(servers: McpServerConfig[]): Promise<void> {
     this.servers = servers;
@@ -27,9 +28,13 @@ export class McpManager {
   }
 
   private async discoverTools(server: McpServerConfig): Promise<McpToolWithServer[]> {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (this.apiKey) {
+      headers['Authorization'] = `Bearer ${this.apiKey}`;
+    }
     const response = await fetch(`${server.url}/mcp`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         jsonrpc: '2.0',
         id: 1,
@@ -86,9 +91,13 @@ export class McpManager {
       throw new Error(`Tool '${name}' not found in any connected MCP server`);
     }
 
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (this.apiKey) {
+      headers['Authorization'] = `Bearer ${this.apiKey}`;
+    }
     const response = await fetch(`${tool.serverUrl}/mcp`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         jsonrpc: '2.0',
         id: Date.now(),

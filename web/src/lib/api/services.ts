@@ -526,11 +526,14 @@ function toQueryString(params: QueryParams): string {
   return serialized ? `?${serialized}` : "";
 }
 
-export function createRaccoonApi(getAccessToken?: () => string | undefined | Promise<string | undefined>) {
+export function createWaiAgentsApi(getAccessToken?: () => string | undefined | Promise<string | undefined>) {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/v1";
   const client = new ApiClient({ baseUrl, getAccessToken });
   return new WaiAgentsApi(client);
 }
+
+/** @deprecated Use createWaiAgentsApi instead */
+export const createRaccoonApi = createWaiAgentsApi;
 
 function normalizeCreateConversationPayload(payload: {
   type: "dm" | "group" | "agent" | "bridge";

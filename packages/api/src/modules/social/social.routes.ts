@@ -20,6 +20,8 @@ import {
 
 export const socialRoutes = new Hono();
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /* -------------------------------------------------------------------------- */
 /*  Feed                                                                      */
 /* -------------------------------------------------------------------------- */
@@ -63,6 +65,9 @@ socialRoutes.get('/feed/new', authMiddleware, async (c) => {
 socialRoutes.post('/feed/:id/like', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const feedItemId = c.req.param('id');
+  if (!UUID_REGEX.test(feedItemId)) {
+    return c.json({ error: 'Invalid ID format' }, 400);
+  }
   try {
     const item = await likeFeedItem(feedItemId, userId);
     return c.json({ item }, 200);
@@ -76,6 +81,9 @@ socialRoutes.post('/feed/:id/like', authMiddleware, async (c) => {
 socialRoutes.delete('/feed/:id/like', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const feedItemId = c.req.param('id');
+  if (!UUID_REGEX.test(feedItemId)) {
+    return c.json({ error: 'Invalid ID format' }, 400);
+  }
   try {
     await unlikeFeedItem(feedItemId, userId);
     return c.json({ ok: true }, 200);
@@ -89,6 +97,9 @@ socialRoutes.delete('/feed/:id/like', authMiddleware, async (c) => {
 socialRoutes.post('/feed/:id/fork', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const agentId = c.req.param('id');
+  if (!UUID_REGEX.test(agentId)) {
+    return c.json({ error: 'Invalid ID format' }, 400);
+  }
   try {
     const agent = await forkAgent(agentId, userId);
     return c.json({ agent }, 201);
@@ -146,6 +157,9 @@ socialRoutes.get('/marketplace/agents/:slug', authMiddleware, async (c) => {
 socialRoutes.post('/marketplace/agents/:id/rate', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const agentId = c.req.param('id');
+  if (!UUID_REGEX.test(agentId)) {
+    return c.json({ error: 'Invalid ID format' }, 400);
+  }
   const body = await c.req.json().catch(() => null);
   const parsed = RateAgentSchema.safeParse(body);
   if (!parsed.success) {
@@ -174,6 +188,9 @@ socialRoutes.post('/marketplace/agents/:id/rate', authMiddleware, async (c) => {
 socialRoutes.post('/users/:id/follow', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const followingId = c.req.param('id');
+  if (!UUID_REGEX.test(followingId)) {
+    return c.json({ error: 'Invalid ID format' }, 400);
+  }
   try {
     await followUser(userId, followingId);
     return c.json({ ok: true }, 201);
@@ -188,6 +205,9 @@ socialRoutes.post('/users/:id/follow', authMiddleware, async (c) => {
 socialRoutes.delete('/users/:id/follow', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const followingId = c.req.param('id');
+  if (!UUID_REGEX.test(followingId)) {
+    return c.json({ error: 'Invalid ID format' }, 400);
+  }
   await unfollowUser(userId, followingId);
   return c.json({ ok: true }, 200);
 });

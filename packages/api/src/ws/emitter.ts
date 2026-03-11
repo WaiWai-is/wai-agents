@@ -54,3 +54,14 @@ export function emitFeedbackEvent(conversationId: string, event: unknown): void 
   if (!io) throw new Error('Socket.IO not initialized');
   io.to(`conversation:${conversationId}`).emit('feedback:event', event);
 }
+
+export function forceLeaveRoom(userId: string, conversationId: string): void {
+  if (!io) return;
+  const room = `user:${userId}`;
+  io.in(room).fetchSockets().then(sockets => {
+    for (const s of sockets) {
+      s.leave(`conversation:${conversationId}`);
+      s.leave(`agent:${conversationId}`);
+    }
+  });
+}

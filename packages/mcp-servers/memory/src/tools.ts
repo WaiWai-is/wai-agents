@@ -23,10 +23,14 @@ export const SearchMemoriesInput = z.object({
 
 export const ForgetMemoryInput = z.object({
   memory_id: z.string().uuid(),
+  agent_id: z.string().uuid(),
+  user_id: z.string().uuid(),
 });
 
 export const UpdateMemoryInput = z.object({
   memory_id: z.string().uuid(),
+  agent_id: z.string().uuid(),
+  user_id: z.string().uuid(),
   content: z.string().min(1).optional(),
   importance: z.number().min(0).max(1).optional(),
 });
@@ -105,7 +109,10 @@ export async function handleForgetMemory(
   input: z.infer<typeof ForgetMemoryInput>,
 ): Promise<{ deleted: boolean }> {
   const result = await sql`
-    DELETE FROM agent_memories WHERE id = ${input.memory_id}::uuid
+    DELETE FROM agent_memories
+    WHERE id = ${input.memory_id}::uuid
+      AND agent_id = ${input.agent_id}::uuid
+      AND user_id = ${input.user_id}::uuid
   `;
 
   return { deleted: result.count > 0 };
@@ -130,6 +137,8 @@ export async function handleUpdateMemory(
           importance = ${input.importance},
           updated_at = ${now}
       WHERE id = ${input.memory_id}::uuid
+        AND agent_id = ${input.agent_id}::uuid
+        AND user_id = ${input.user_id}::uuid
     `;
     return { updated: result.count > 0 };
   }
@@ -143,6 +152,8 @@ export async function handleUpdateMemory(
           embedding = ${embeddingStr}::vector,
           updated_at = ${now}
       WHERE id = ${input.memory_id}::uuid
+        AND agent_id = ${input.agent_id}::uuid
+        AND user_id = ${input.user_id}::uuid
     `;
     return { updated: result.count > 0 };
   }
@@ -153,6 +164,8 @@ export async function handleUpdateMemory(
     SET importance = ${input.importance!},
         updated_at = ${now}
     WHERE id = ${input.memory_id}::uuid
+      AND agent_id = ${input.agent_id}::uuid
+      AND user_id = ${input.user_id}::uuid
   `;
   return { updated: result.count > 0 };
 }

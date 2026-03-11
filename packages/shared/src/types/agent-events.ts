@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 export const RunStartedEventSchema = z.object({
   type: z.literal('run_started'),
-  runId: z.string(),
-  agentId: z.string(),
+  run_id: z.string(),
+  agent_id: z.string(),
 });
 
 export const TextDeltaEventSchema = z.object({
@@ -14,11 +14,14 @@ export const TextDeltaEventSchema = z.object({
 export const ToolCallStartEventSchema = z.object({
   type: z.literal('tool_call_start'),
   name: z.string(),
-  callId: z.string(),
+  call_id: z.string(),
+  input: z.unknown().optional(),
 });
 
 export const ToolCallEndEventSchema = z.object({
   type: z.literal('tool_call_end'),
+  name: z.string(),
+  call_id: z.string(),
   result: z.string(),
   duration_ms: z.number(),
 });

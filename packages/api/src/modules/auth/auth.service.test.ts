@@ -20,7 +20,7 @@ describe('hashPassword / verifyPassword', () => {
     const password = 'supersecret123';
     const hash = await hashPassword(password);
 
-    expect(hash).toContain(':');
+    expect(hash).toMatch(/^\$argon2/);
     expect(hash).not.toBe(password);
 
     const valid = await verifyPassword(password, hash);

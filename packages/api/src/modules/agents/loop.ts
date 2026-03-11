@@ -80,7 +80,7 @@ export async function runAgentLoop(config: AgentLoopConfig): Promise<AgentLoopRe
   chatMessages.push({ role: 'user', content: message });
 
   // 5. Emit run_started
-  emitAgentEvent(conversationId, { type: 'run_started', runId, agentId });
+  emitAgentEvent(conversationId, { type: 'run_started', run_id: runId, agent_id: agentId });
 
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
@@ -120,7 +120,7 @@ export async function runAgentLoop(config: AgentLoopConfig): Promise<AgentLoopRe
         emitAgentEvent(conversationId, {
           type: 'tool_call_start',
           name: toolCall.name,
-          callId,
+          call_id: callId,
         });
 
         const startTime = Date.now();
@@ -129,6 +129,8 @@ export async function runAgentLoop(config: AgentLoopConfig): Promise<AgentLoopRe
 
         emitAgentEvent(conversationId, {
           type: 'tool_call_end',
+          name: toolCall.name,
+          call_id: callId,
           result: JSON.stringify(result),
           duration_ms,
         });

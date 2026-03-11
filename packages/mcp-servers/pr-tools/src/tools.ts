@@ -45,10 +45,12 @@ export const ListSourcesInput = z.object({
 
 export const RemoveSourceInput = z.object({
   source_id: z.string().uuid(),
+  agent_id: z.string().uuid(),
 });
 
 export const UpdateSourceInput = z.object({
   source_id: z.string().uuid(),
+  agent_id: z.string().uuid(),
   name: z.string().min(1).optional(),
   url: z.string().url().optional(),
   config: z.record(z.unknown()).optional(),
@@ -72,10 +74,12 @@ export const SearchArticlesInput = z.object({
 
 export const GetArticleDetailsInput = z.object({
   article_id: z.string().uuid(),
+  agent_id: z.string().uuid(),
 });
 
 export const SummarizeArticleInput = z.object({
   article_id: z.string().uuid(),
+  agent_id: z.string().uuid(),
 });
 
 export const GetTodaySummaryInput = z.object({
@@ -167,7 +171,9 @@ export async function handleListSources(input: z.infer<typeof ListSourcesInput>)
 
 export async function handleRemoveSource(input: z.infer<typeof RemoveSourceInput>) {
   const result = await sql`
-    DELETE FROM agent_sources WHERE id = ${input.source_id}::uuid
+    DELETE FROM agent_sources
+    WHERE id = ${input.source_id}::uuid
+      AND agent_id = ${input.agent_id}::uuid
   `;
   return { deleted: result.count > 0 };
 }
@@ -180,6 +186,7 @@ export async function handleUpdateSource(input: z.infer<typeof UpdateSourceInput
       UPDATE agent_sources
       SET name = ${input.name}, url = ${input.url}, config = ${JSON.stringify(input.config)}::jsonb, updated_at = ${now}
       WHERE id = ${input.source_id}::uuid
+        AND agent_id = ${input.agent_id}::uuid
     `;
     return { updated: result.count > 0 };
   }
@@ -189,6 +196,7 @@ export async function handleUpdateSource(input: z.infer<typeof UpdateSourceInput
       UPDATE agent_sources
       SET name = ${input.name}, url = ${input.url}, updated_at = ${now}
       WHERE id = ${input.source_id}::uuid
+        AND agent_id = ${input.agent_id}::uuid
     `;
     return { updated: result.count > 0 };
   }
@@ -198,6 +206,7 @@ export async function handleUpdateSource(input: z.infer<typeof UpdateSourceInput
       UPDATE agent_sources
       SET name = ${input.name}, config = ${JSON.stringify(input.config)}::jsonb, updated_at = ${now}
       WHERE id = ${input.source_id}::uuid
+        AND agent_id = ${input.agent_id}::uuid
     `;
     return { updated: result.count > 0 };
   }
@@ -207,6 +216,7 @@ export async function handleUpdateSource(input: z.infer<typeof UpdateSourceInput
       UPDATE agent_sources
       SET url = ${input.url}, config = ${JSON.stringify(input.config)}::jsonb, updated_at = ${now}
       WHERE id = ${input.source_id}::uuid
+        AND agent_id = ${input.agent_id}::uuid
     `;
     return { updated: result.count > 0 };
   }
@@ -216,6 +226,7 @@ export async function handleUpdateSource(input: z.infer<typeof UpdateSourceInput
       UPDATE agent_sources
       SET name = ${input.name}, updated_at = ${now}
       WHERE id = ${input.source_id}::uuid
+        AND agent_id = ${input.agent_id}::uuid
     `;
     return { updated: result.count > 0 };
   }
@@ -225,6 +236,7 @@ export async function handleUpdateSource(input: z.infer<typeof UpdateSourceInput
       UPDATE agent_sources
       SET url = ${input.url}, updated_at = ${now}
       WHERE id = ${input.source_id}::uuid
+        AND agent_id = ${input.agent_id}::uuid
     `;
     return { updated: result.count > 0 };
   }
@@ -234,6 +246,7 @@ export async function handleUpdateSource(input: z.infer<typeof UpdateSourceInput
       UPDATE agent_sources
       SET config = ${JSON.stringify(input.config)}::jsonb, updated_at = ${now}
       WHERE id = ${input.source_id}::uuid
+        AND agent_id = ${input.agent_id}::uuid
     `;
     return { updated: result.count > 0 };
   }
@@ -359,6 +372,7 @@ export async function handleGetArticleDetails(input: z.infer<typeof GetArticleDe
     SELECT id, agent_id, source_id, title, url, content, summary, published_at, collected_at, metadata
     FROM agent_articles
     WHERE id = ${input.article_id}::uuid
+      AND agent_id = ${input.agent_id}::uuid
   `;
 
   if (rows.length === 0) {
@@ -370,7 +384,9 @@ export async function handleGetArticleDetails(input: z.infer<typeof GetArticleDe
 
 export async function handleSummarizeArticle(input: z.infer<typeof SummarizeArticleInput>) {
   const rows = await sql<Array<{ id: string; title: string; content: string; summary: string | null }>>`
-    SELECT id, title, content, summary FROM agent_articles WHERE id = ${input.article_id}::uuid
+    SELECT id, title, content, summary FROM agent_articles
+    WHERE id = ${input.article_id}::uuid
+      AND agent_id = ${input.agent_id}::uuid
   `;
 
   if (rows.length === 0) {

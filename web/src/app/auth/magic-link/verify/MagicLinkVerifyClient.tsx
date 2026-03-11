@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createRaccoonApi } from "@/lib/api";
+import { createWaiAgentsApi } from "@/lib/api";
 import { useSessionStore } from "@/lib/state";
 import type { SessionUser } from "@/lib/state/session-store";
 
@@ -18,7 +18,7 @@ export function MagicLinkVerifyClient() {
   const appDeepLink = token ? `waiagents://auth/magic-link/verify?token=${encodeURIComponent(token)}` : "";
 
   const setSession = useSessionStore((state) => state.setSession);
-  const api = useMemo(() => createRaccoonApi(), []);
+  const api = useMemo(() => createWaiAgentsApi(), []);
 
   const [state, setState] = useState<VerifyState>("verifying");
   const [message, setMessage] = useState("Verifying your magic link...");

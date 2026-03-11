@@ -44,6 +44,7 @@ export const CreateAgentConversationInput = z.object({
 
 export const ReadConversationInput = z.object({
   conversation_id: z.string().uuid(),
+  agent_id: z.string().uuid(),
   limit: z.number().int().positive().max(100).default(20),
 });
 
@@ -275,6 +276,18 @@ export async function handleReadConversation(
     created_at: string;
   }>;
 }> {
+  // Verify the requesting agent is a member of this conversation
+  const membership = await sql`
+    SELECT id FROM conversation_members
+    WHERE conversation_id = ${input.conversation_id}::uuid
+      AND user_id = ${input.agent_id}::uuid
+    LIMIT 1
+  `;
+
+  if (membership.length === 0) {
+    throw new Error(`Agent ${input.agent_id} is not a member of conversation ${input.conversation_id}`);
+  }
+
   const rows = await sql<
     Array<{
       sender_id: string;
