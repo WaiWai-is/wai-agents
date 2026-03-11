@@ -24,7 +24,9 @@ vi.mock('../queue.js', () => ({
   }),
 }));
 
-const createWorkerRef: { processor: ((job: { data: unknown; name: string; id?: string }) => Promise<void>) | null } = {
+const createWorkerRef: {
+  processor: ((job: { data: unknown; name: string; id?: string }) => Promise<void>) | null;
+} = {
   processor: null,
 };
 
@@ -38,7 +40,7 @@ describe('idempotencyCleanupWorker', () => {
   it('executes DELETE SQL for expired idempotency keys', async () => {
     sqlMock.mockResolvedValueOnce([]);
 
-    await createWorkerRef.processor!({ data: {}, name: 'cleanup-expired-keys' });
+    await createWorkerRef.processor?.({ data: {}, name: 'cleanup-expired-keys' });
 
     expect(sqlMock).toHaveBeenCalledTimes(1);
 
@@ -54,7 +56,7 @@ describe('idempotencyCleanupWorker', () => {
   it('does not delete non-expired keys (verified by SQL WHERE clause)', async () => {
     sqlMock.mockResolvedValueOnce([]);
 
-    await createWorkerRef.processor!({ data: {}, name: 'cleanup-expired-keys' });
+    await createWorkerRef.processor?.({ data: {}, name: 'cleanup-expired-keys' });
 
     // The SQL only targets expired keys — WHERE expires_at < NOW()
     const callArgs = sqlMock.mock.calls[0];
@@ -72,7 +74,7 @@ describe('idempotencyCleanupWorker', () => {
     sqlMock.mockRejectedValueOnce(dbError);
 
     await expect(
-      createWorkerRef.processor!({ data: {}, name: 'cleanup-expired-keys' }),
+      createWorkerRef.processor?.({ data: {}, name: 'cleanup-expired-keys' }),
     ).rejects.toThrow('deadlock detected');
   });
 
@@ -80,14 +82,14 @@ describe('idempotencyCleanupWorker', () => {
     sqlMock.mockResolvedValueOnce([]);
 
     await expect(
-      createWorkerRef.processor!({ data: {}, name: 'cleanup-expired-keys' }),
+      createWorkerRef.processor?.({ data: {}, name: 'cleanup-expired-keys' }),
     ).resolves.toBeUndefined();
   });
 
   it('executes only one SQL statement per run', async () => {
     sqlMock.mockResolvedValueOnce([]);
 
-    await createWorkerRef.processor!({ data: {}, name: 'cleanup-expired-keys' });
+    await createWorkerRef.processor?.({ data: {}, name: 'cleanup-expired-keys' });
 
     expect(sqlMock).toHaveBeenCalledTimes(1);
   });

@@ -935,7 +935,11 @@ export function ChatView({
                           </div>
                         )}
                         <pre className="cv-approval-args">
-                          <code dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(highlightedArgs) }} />
+                          <code
+                            dangerouslySetInnerHTML={{
+                              __html: DOMPurify.sanitize(highlightedArgs),
+                            }}
+                          />
                         </pre>
                         <div className="cv-approval-actions">
                           <button

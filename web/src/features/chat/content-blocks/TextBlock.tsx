@@ -91,7 +91,9 @@ export function TextBlock({ block }: { block: TextBlockData }) {
           <span
             key={i}
             className="cb-text-content"
-            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderInlineMarkdown(part), PURIFY_CONFIG) }}
+            dangerouslySetInnerHTML={{
+              __html: DOMPurify.sanitize(renderInlineMarkdown(part), PURIFY_CONFIG),
+            }}
           />
         );
       })}

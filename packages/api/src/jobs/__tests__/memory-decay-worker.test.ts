@@ -24,7 +24,9 @@ vi.mock('../queue.js', () => ({
   }),
 }));
 
-const createWorkerRef: { processor: ((job: { data: unknown; name: string; id?: string }) => Promise<void>) | null } = {
+const createWorkerRef: {
+  processor: ((job: { data: unknown; name: string; id?: string }) => Promise<void>) | null;
+} = {
   processor: null,
 };
 
@@ -41,7 +43,7 @@ describe('memoryDecayWorker', () => {
     // Step 2: DELETE below threshold
     sqlMock.mockResolvedValueOnce([]);
 
-    await createWorkerRef.processor!({ data: {}, name: 'decay-memories' });
+    await createWorkerRef.processor?.({ data: {}, name: 'decay-memories' });
 
     expect(sqlMock).toHaveBeenCalledTimes(2);
 
@@ -71,7 +73,7 @@ describe('memoryDecayWorker', () => {
       return Promise.resolve([]);
     });
 
-    await createWorkerRef.processor!({ data: {}, name: 'decay-memories' });
+    await createWorkerRef.processor?.({ data: {}, name: 'decay-memories' });
 
     expect(callOrder).toEqual(['update', 'delete']);
   });
@@ -80,9 +82,9 @@ describe('memoryDecayWorker', () => {
     const dbError = new Error('disk full');
     sqlMock.mockRejectedValueOnce(dbError);
 
-    await expect(
-      createWorkerRef.processor!({ data: {}, name: 'decay-memories' }),
-    ).rejects.toThrow('disk full');
+    await expect(createWorkerRef.processor?.({ data: {}, name: 'decay-memories' })).rejects.toThrow(
+      'disk full',
+    );
 
     // DELETE should not have been called since UPDATE threw
     expect(sqlMock).toHaveBeenCalledTimes(1);
@@ -92,9 +94,9 @@ describe('memoryDecayWorker', () => {
     sqlMock.mockResolvedValueOnce([]); // UPDATE succeeds
     sqlMock.mockRejectedValueOnce(new Error('constraint violation'));
 
-    await expect(
-      createWorkerRef.processor!({ data: {}, name: 'decay-memories' }),
-    ).rejects.toThrow('constraint violation');
+    await expect(createWorkerRef.processor?.({ data: {}, name: 'decay-memories' })).rejects.toThrow(
+      'constraint violation',
+    );
   });
 
   it('handles empty agent_memories table gracefully', async () => {
@@ -103,7 +105,7 @@ describe('memoryDecayWorker', () => {
     sqlMock.mockResolvedValueOnce([]);
 
     await expect(
-      createWorkerRef.processor!({ data: {}, name: 'decay-memories' }),
+      createWorkerRef.processor?.({ data: {}, name: 'decay-memories' }),
     ).resolves.toBeUndefined();
   });
 });

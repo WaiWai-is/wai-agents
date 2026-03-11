@@ -1,4 +1,4 @@
-import { type Mock, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 
 // Mock socket.io-client before importing SocketClient
 const mockSocket = {
@@ -53,9 +53,7 @@ describe('SocketClient', () => {
     it('registers connect, disconnect, and connect_error handlers', () => {
       client.connect('tok');
 
-      const registeredEvents = (mockSocket.on as Mock).mock.calls.map(
-        ([event]: [string]) => event,
-      );
+      const registeredEvents = (mockSocket.on as Mock).mock.calls.map(([event]: [string]) => event);
       expect(registeredEvents).toContain('connect');
       expect(registeredEvents).toContain('disconnect');
       expect(registeredEvents).toContain('connect_error');
@@ -67,9 +65,7 @@ describe('SocketClient', () => {
       client.connect('tok');
 
       // The listener should be registered on the socket
-      const registeredEvents = (mockSocket.on as Mock).mock.calls.map(
-        ([event]: [string]) => event,
-      );
+      const registeredEvents = (mockSocket.on as Mock).mock.calls.map(([event]: [string]) => event);
       expect(registeredEvents).toContain('message:new');
     });
   });
@@ -145,9 +141,7 @@ describe('SocketClient', () => {
       const cb = vi.fn();
       client.onMessage(cb);
 
-      const registeredEvents = (mockSocket.on as Mock).mock.calls.map(
-        ([event]: [string]) => event,
-      );
+      const registeredEvents = (mockSocket.on as Mock).mock.calls.map(([event]: [string]) => event);
       expect(registeredEvents).toContain('message:new');
     });
 
@@ -155,9 +149,7 @@ describe('SocketClient', () => {
       const cb = vi.fn();
       client.onMessageUpdated(cb);
 
-      const registeredEvents = (mockSocket.on as Mock).mock.calls.map(
-        ([event]: [string]) => event,
-      );
+      const registeredEvents = (mockSocket.on as Mock).mock.calls.map(([event]: [string]) => event);
       expect(registeredEvents).toContain('message:updated');
     });
 
@@ -165,9 +157,7 @@ describe('SocketClient', () => {
       const cb = vi.fn();
       client.onMessageDeleted(cb);
 
-      const registeredEvents = (mockSocket.on as Mock).mock.calls.map(
-        ([event]: [string]) => event,
-      );
+      const registeredEvents = (mockSocket.on as Mock).mock.calls.map(([event]: [string]) => event);
       expect(registeredEvents).toContain('message:deleted');
     });
 
@@ -175,9 +165,7 @@ describe('SocketClient', () => {
       const cb = vi.fn();
       client.onAgentEvent(cb);
 
-      const registeredEvents = (mockSocket.on as Mock).mock.calls.map(
-        ([event]: [string]) => event,
-      );
+      const registeredEvents = (mockSocket.on as Mock).mock.calls.map(([event]: [string]) => event);
       expect(registeredEvents).toContain('agent:event');
     });
 
@@ -185,9 +173,7 @@ describe('SocketClient', () => {
       const cb = vi.fn();
       client.onTyping(cb);
 
-      const registeredEvents = (mockSocket.on as Mock).mock.calls.map(
-        ([event]: [string]) => event,
-      );
+      const registeredEvents = (mockSocket.on as Mock).mock.calls.map(([event]: [string]) => event);
       expect(registeredEvents).toContain('typing');
       expect(registeredEvents).toContain('typing:start');
       expect(registeredEvents).toContain('typing:stop');
@@ -197,9 +183,7 @@ describe('SocketClient', () => {
       const cb = vi.fn();
       client.onPresence(cb);
 
-      const registeredEvents = (mockSocket.on as Mock).mock.calls.map(
-        ([event]: [string]) => event,
-      );
+      const registeredEvents = (mockSocket.on as Mock).mock.calls.map(([event]: [string]) => event);
       expect(registeredEvents).toContain('presence:update');
       expect(registeredEvents).toContain('presence:snapshot');
     });
@@ -219,9 +203,7 @@ describe('SocketClient', () => {
 
       unsubscribe();
 
-      const offEvents = (mockSocket.off as Mock).mock.calls.map(
-        ([event]: [string]) => event,
-      );
+      const offEvents = (mockSocket.off as Mock).mock.calls.map(([event]: [string]) => event);
       expect(offEvents).toContain('typing');
       expect(offEvents).toContain('typing:start');
       expect(offEvents).toContain('typing:stop');
@@ -237,9 +219,7 @@ describe('SocketClient', () => {
 
       freshClient.connect('tok');
 
-      const registeredEvents = (mockSocket.on as Mock).mock.calls.map(
-        ([event]: [string]) => event,
-      );
+      const registeredEvents = (mockSocket.on as Mock).mock.calls.map(([event]: [string]) => event);
       expect(registeredEvents).toContain('message:new');
     });
   });

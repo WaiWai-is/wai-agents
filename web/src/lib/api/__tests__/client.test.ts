@@ -1,6 +1,6 @@
-import { type Mock, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiError } from '../errors';
+import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import { ApiClient, type SessionStoreAdapter } from '../client';
+import { ApiError } from '../errors';
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -126,9 +126,7 @@ describe('ApiClient', () => {
   });
 
   it('throws ApiError on non-OK JSON response', async () => {
-    fetchMock.mockResolvedValue(
-      jsonResponse({ message: 'Not found', code: 'NOT_FOUND' }, 404),
-    );
+    fetchMock.mockResolvedValue(jsonResponse({ message: 'Not found', code: 'NOT_FOUND' }, 404));
 
     const client = new ApiClient({
       baseUrl: 'https://api.test.com',
@@ -267,12 +265,12 @@ describe('ApiClient', () => {
       };
 
       // Both original and refresh succeed, but the retried request also returns 401
-      let callCount = 0;
+      let _callCount = 0;
       fetchMock.mockImplementation(async (url: string) => {
         if (url.includes('/auth/refresh')) {
           return jsonResponse({ access_token: 'new_access', refresh_token: 'new_refresh' });
         }
-        callCount++;
+        _callCount++;
         // Always return 401 -- the retry should not trigger another refresh
         return jsonResponse({ error: 'Still unauthorized' }, 401);
       });

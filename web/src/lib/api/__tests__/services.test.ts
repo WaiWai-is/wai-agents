@@ -1,6 +1,6 @@
-import { type Mock, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import { ApiClient } from '../client';
-import { WaiAgentsApi, createWaiAgentsApi } from '../services';
+import { createWaiAgentsApi, WaiAgentsApi } from '../services';
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -56,9 +56,7 @@ describe('WaiAgentsApi', () => {
     });
 
     it('refresh sends POST /auth/refresh', async () => {
-      fetchMock.mockResolvedValue(
-        jsonResponse({ access_token: 'new', refresh_token: 'new_r' }),
-      );
+      fetchMock.mockResolvedValue(jsonResponse({ access_token: 'new', refresh_token: 'new_r' }));
 
       await api.refresh('old_refresh_tok');
 
@@ -152,7 +150,9 @@ describe('WaiAgentsApi', () => {
     });
 
     it('listConversations passes cursor and limit as query params', async () => {
-      fetchMock.mockResolvedValue(jsonResponse({ conversations: [], page_info: { next_cursor: null, has_more: false } }));
+      fetchMock.mockResolvedValue(
+        jsonResponse({ conversations: [], page_info: { next_cursor: null, has_more: false } }),
+      );
 
       await api.listConversations({ cursor: 'abc', limit: 5 });
 
@@ -214,7 +214,9 @@ describe('WaiAgentsApi', () => {
     });
 
     it('listMembers requests the correct path', async () => {
-      fetchMock.mockResolvedValue(jsonResponse({ members: [], page_info: { next_cursor: null, has_more: false } }));
+      fetchMock.mockResolvedValue(
+        jsonResponse({ members: [], page_info: { next_cursor: null, has_more: false } }),
+      );
 
       await api.listMembers('c1');
 
@@ -290,9 +292,7 @@ describe('WaiAgentsApi', () => {
     });
 
     it('marketplaceCategories normalizes string categories', async () => {
-      fetchMock.mockResolvedValue(
-        jsonResponse({ categories: ['Productivity', 'Creative Tools'] }),
-      );
+      fetchMock.mockResolvedValue(jsonResponse({ categories: ['Productivity', 'Creative Tools'] }));
 
       const result = await api.marketplaceCategories();
 

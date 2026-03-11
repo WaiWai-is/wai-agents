@@ -187,7 +187,7 @@ type TabCache = {
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export function FeedView({ api, currentUser }: FeedViewProps) {
+export function FeedView({ api, currentUser: _currentUser }: FeedViewProps) {
   const [kind, setKind] = useState<FeedKind>('for_you');
   const [items, setItems] = useState<FeedItem[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
