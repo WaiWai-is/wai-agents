@@ -6,8 +6,7 @@ import hljs from 'highlight.js/lib/core';
 let _purify: typeof import('dompurify').default | null = null;
 function getPurify() {
   if (!_purify && typeof window !== 'undefined') {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    _purify = require('dompurify') as typeof import('dompurify').default;
+    _purify = require('dompurify') as typeof import('dompurify').default; // eslint-disable-line
   }
   return _purify;
 }
