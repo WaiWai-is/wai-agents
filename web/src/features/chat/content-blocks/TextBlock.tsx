@@ -106,10 +106,11 @@ export function TextBlock({ block }: { block: TextBlockData }) {
             className="cb-text-content"
             // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via DOMPurify
             dangerouslySetInnerHTML={{
-              __html: (getPurify()?.sanitize ?? escapeHtml)(
-                renderInlineMarkdown(part),
-                PURIFY_CONFIG,
-              ),
+              __html: (() => {
+                const purify = getPurify();
+                const html = renderInlineMarkdown(part);
+                return purify ? purify.sanitize(html, PURIFY_CONFIG) : escapeHtml(html);
+              })(),
             }}
           />
         );
