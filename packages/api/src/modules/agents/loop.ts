@@ -94,7 +94,14 @@ export async function runAgentLoop(config: AgentLoopConfig): Promise<AgentLoopRe
   const recorder = new TraceRecorder();
   let traceId: string | null = null;
   try {
-    traceId = await recorder.startTrace(agentId, userId, conversationId, modelName, triggerType, runId);
+    traceId = await recorder.startTrace(
+      agentId,
+      userId,
+      conversationId,
+      modelName,
+      triggerType,
+      runId,
+    );
   } catch {
     // Trace recording is best-effort; do not block the loop
   }
@@ -137,9 +144,7 @@ export async function runAgentLoop(config: AgentLoopConfig): Promise<AgentLoopRe
             const thinkStart = Date.now();
             recorder
               .addSpan(traceId, 'thinking', 'thinking', { summary })
-              .then((spanId) =>
-                recorder.endSpan(spanId, 'ok', null, null, Date.now() - thinkStart),
-              )
+              .then((spanId) => recorder.endSpan(spanId, 'ok', null, null, Date.now() - thinkStart))
               .catch(() => {});
           }
         },
@@ -190,7 +195,12 @@ export async function runAgentLoop(config: AgentLoopConfig): Promise<AgentLoopRe
             const approvalStart = Date.now();
             if (traceId) {
               try {
-                approvalSpanId = await recorder.addSpan(traceId, 'approval', toolCall.name, toolCall.input);
+                approvalSpanId = await recorder.addSpan(
+                  traceId,
+                  'approval',
+                  toolCall.name,
+                  toolCall.input,
+                );
               } catch {
                 // best-effort
               }
@@ -243,7 +253,12 @@ export async function runAgentLoop(config: AgentLoopConfig): Promise<AgentLoopRe
         let toolSpanId: string | null = null;
         if (traceId) {
           try {
-            toolSpanId = await recorder.addSpan(traceId, 'tool_call', toolCall.name, toolCall.input);
+            toolSpanId = await recorder.addSpan(
+              traceId,
+              'tool_call',
+              toolCall.name,
+              toolCall.input,
+            );
           } catch {
             // best-effort
           }

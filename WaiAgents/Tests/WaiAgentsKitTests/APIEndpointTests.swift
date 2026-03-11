@@ -209,6 +209,8 @@ struct APIEndpointTests {
             .updateConversation(id: "c", title: nil),
             .updateAgent(id: "a", params: [:]),
             .updatePage(id: "p", title: nil, description: nil),
+            .updateCrew(id: "cr", params: [:]),
+            .updateTrigger(agentID: "a", triggerID: "t", params: [:]),
         ]
         for endpoint in patchEndpoints {
             #expect(endpoint.method == "PATCH", "\(endpoint) should be PATCH")
@@ -224,6 +226,8 @@ struct APIEndpointTests {
             .deleteAgent(id: "a"),
             .disconnectBridge(id: "b"),
             .unlikeFeedItem(id: "f"),
+            .deleteCrew(id: "cr"),
+            .deleteTrigger(agentID: "a", triggerID: "t"),
         ]
         for endpoint in deleteEndpoints {
             #expect(endpoint.method == "DELETE", "\(endpoint) should be DELETE")
@@ -255,6 +259,10 @@ struct APIEndpointTests {
             .marketplaceCategories,
             .agentProfile(slug: "s"),
             .searchMarketplace(query: "q"),
+            .listCrews(cursor: nil, limit: nil),
+            .getCrew(id: "cr"),
+            .listTriggers(agentID: "a"),
+            .getTrigger(agentID: "a", triggerID: "t"),
         ]
         for endpoint in getEndpoints {
             #expect(endpoint.method == "GET", "\(endpoint) should be GET")
@@ -322,6 +330,12 @@ struct APIEndpointTests {
         #expect(endpoint.idempotencyKey == "feed-fork-key")
     }
 
+    @Test("runCrew has idempotency key")
+    func runCrewIdempotencyKey() {
+        let endpoint = APIEndpoint.runCrew(id: "cr1", input: "go", idempotencyKey: "crew-run-key")
+        #expect(endpoint.idempotencyKey == "crew-run-key")
+    }
+
     @Test("GET endpoints have no idempotency key")
     func getEndpointsNoIdempotencyKey() {
         let endpoints: [APIEndpoint] = [.me, .listAgents, .feed(cursor: nil, limit: nil)]
@@ -374,6 +388,7 @@ struct APIEndpointTests {
             .followingFeed(cursor: "c3", limit: 15),
             .newFeedItems(cursor: "c4", limit: 5),
             .marketplace(cursor: "c5", limit: 30),
+            .listCrews(cursor: "c6", limit: 25),
         ]
         for endpoint in feedEndpoints {
             let items = endpoint.queryItems

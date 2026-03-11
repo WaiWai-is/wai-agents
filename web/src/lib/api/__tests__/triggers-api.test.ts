@@ -82,9 +82,7 @@ describe('WaiAgentsApi — trigger methods', () => {
         config: { url: 'https://hooks.example.com/pr' },
         enabled: true,
       };
-      fetchMock.mockResolvedValue(
-        jsonResponse({ trigger: { id: 'tr_new', ...triggerData } }),
-      );
+      fetchMock.mockResolvedValue(jsonResponse({ trigger: { id: 'tr_new', ...triggerData } }));
 
       const result = await api.createTrigger('agent_1', triggerData);
 
@@ -132,9 +130,7 @@ describe('WaiAgentsApi — trigger methods', () => {
 
   describe('getTrigger', () => {
     it('sends GET /agents/:agentId/triggers/:triggerId', async () => {
-      fetchMock.mockResolvedValue(
-        jsonResponse({ trigger: { id: 'tr_1', name: 'My Trigger' } }),
-      );
+      fetchMock.mockResolvedValue(jsonResponse({ trigger: { id: 'tr_1', name: 'My Trigger' } }));
 
       const result = await api.getTrigger('agent_1', 'tr_1');
 
@@ -146,9 +142,7 @@ describe('WaiAgentsApi — trigger methods', () => {
 
   describe('updateTrigger', () => {
     it('sends PATCH /agents/:agentId/triggers/:triggerId with partial payload', async () => {
-      fetchMock.mockResolvedValue(
-        jsonResponse({ trigger: { id: 'tr_1', name: 'Updated' } }),
-      );
+      fetchMock.mockResolvedValue(jsonResponse({ trigger: { id: 'tr_1', name: 'Updated' } }));
 
       await api.updateTrigger('agent_1', 'tr_1', { name: 'Updated', enabled: false });
 

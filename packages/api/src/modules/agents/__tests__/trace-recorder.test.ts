@@ -241,9 +241,7 @@ describe('TraceRecorder', () => {
         },
       ] as any);
       // endTrace: get started_at
-      sqlMock.mockResolvedValueOnce([
-        { started_at: new Date().toISOString() },
-      ] as any);
+      sqlMock.mockResolvedValueOnce([{ started_at: new Date().toISOString() }] as any);
       // endTrace: update
       sqlMock.mockResolvedValueOnce([] as any);
 
