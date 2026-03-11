@@ -233,9 +233,6 @@ importers:
       next:
         specifier: 14.2.5
         version: 14.2.5(@playwright/test@1.58.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      phoenix:
-        specifier: ^1.7.14
-        version: 1.8.4
       react:
         specifier: 18.2.0
         version: 18.2.0
@@ -3229,9 +3226,6 @@ packages:
 
   pgpass@1.0.5:
     resolution: {integrity: sha512-FdW9r/jQZhSeohs1Z3sI1yxFQNFvMcnmfuj4WBMUTxOrAyLMaTcE1aAMBiTlbMNaXvBCQuVi0R7hd8udDSP7ug==}
-
-  phoenix@1.8.4:
-    resolution: {integrity: sha512-5wdO9mqU4l0AmcexN8mA0m1BsC4ROv2l55MN31gbxmJPzghc4SxVxnNTh9qaummYa2pbwkoBvG8FezO7cjdr8A==}
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -7170,8 +7164,6 @@ snapshots:
   pgpass@1.0.5:
     dependencies:
       split2: 4.2.0
-
-  phoenix@1.8.4: {}
 
   picocolors@1.1.1: {}
 
