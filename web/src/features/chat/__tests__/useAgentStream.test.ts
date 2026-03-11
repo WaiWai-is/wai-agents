@@ -161,6 +161,13 @@ function createStreamProcessor() {
   };
 }
 
+/** Assert streamingMessage exists and return its blocks (avoids non-null assertion) */
+function blocksOf(proc: ReturnType<typeof createStreamProcessor>): ContentBlock[] {
+  const msg = proc.getState().streamingMessage;
+  if (!msg) throw new Error('Expected streamingMessage to exist');
+  return msg.blocks;
+}
+
 describe('useAgentStream event processing', () => {
   let processor: ReturnType<typeof createStreamProcessor>;
 
@@ -195,7 +202,7 @@ describe('useAgentStream event processing', () => {
       processor.processEvent({ type: 'text_delta', text: 'Hello ' });
       processor.processEvent({ type: 'text_delta', text: 'world' });
 
-      const blocks = processor.getState().streamingMessage!.blocks;
+      const blocks = blocksOf(processor);
       expect(blocks.length).toBe(1);
       expect(blocks[0]).toEqual({ type: 'text', text: 'Hello world' });
     });
@@ -204,7 +211,7 @@ describe('useAgentStream event processing', () => {
       processor.processEvent({ type: 'text_delta', text: 'surprise' });
       const state = processor.getState();
       expect(state.isStreaming).toBe(true);
-      expect(state.streamingMessage!.blocks[0]).toEqual({ type: 'text', text: 'surprise' });
+      expect(blocksOf(processor)[0]).toEqual({ type: 'text', text: 'surprise' });
     });
 
     it('handles empty text delta', () => {
@@ -212,7 +219,7 @@ describe('useAgentStream event processing', () => {
       processor.processEvent({ type: 'text_delta', text: '' });
       processor.processEvent({ type: 'text_delta', text: 'after' });
 
-      const blocks = processor.getState().streamingMessage!.blocks;
+      const blocks = blocksOf(processor);
       expect(blocks.length).toBe(1);
       expect(blocks[0]).toEqual({ type: 'text', text: 'after' });
     });
@@ -221,7 +228,7 @@ describe('useAgentStream event processing', () => {
       processor.processEvent({ type: 'run_started', runId: 'r1' });
       processor.processEvent({ type: 'text_delta' });
 
-      const blocks = processor.getState().streamingMessage!.blocks;
+      const blocks = blocksOf(processor);
       expect(blocks.length).toBe(1);
       expect(blocks[0]).toEqual({ type: 'text', text: '' });
     });
@@ -236,7 +243,7 @@ describe('useAgentStream event processing', () => {
       });
       processor.processEvent({ type: 'text_delta', text: 'after' });
 
-      const blocks = processor.getState().streamingMessage!.blocks;
+      const blocks = blocksOf(processor);
       expect(blocks.length).toBe(3);
       expect(blocks[0].type).toBe('text');
       expect(blocks[1].type).toBe('tool_call');
@@ -256,7 +263,7 @@ describe('useAgentStream event processing', () => {
         toolInput: { query: 'test' },
       });
 
-      const blocks = processor.getState().streamingMessage!.blocks;
+      const blocks = blocksOf(processor);
       expect(blocks.length).toBe(1);
       const block = blocks[0] as any;
       expect(block.type).toBe('tool_call');
@@ -280,7 +287,7 @@ describe('useAgentStream event processing', () => {
         durationMs: 150,
       });
 
-      const blocks = processor.getState().streamingMessage!.blocks;
+      const blocks = blocksOf(processor);
       expect(blocks.length).toBe(2);
       expect((blocks[0] as any).status).toBe('done');
       expect(blocks[1].type).toBe('tool_result');
@@ -297,7 +304,7 @@ describe('useAgentStream event processing', () => {
         toolResult: 'orphan result',
       });
 
-      const blocks = processor.getState().streamingMessage!.blocks;
+      const blocks = blocksOf(processor);
       expect(blocks.length).toBe(1);
       expect(blocks[0].type).toBe('tool_result');
     });
@@ -320,7 +327,7 @@ describe('useAgentStream event processing', () => {
         toolResult: 'done',
       });
 
-      const blocks = processor.getState().streamingMessage!.blocks;
+      const blocks = blocksOf(processor);
       // Last running tool_call (tc2) should be marked done
       expect((blocks[1] as any).status).toBe('done');
       // First tool_call (tc1) should still be running
@@ -335,7 +342,7 @@ describe('useAgentStream event processing', () => {
       processor.processEvent({ type: 'run_started', runId: 'r1' });
       processor.processEvent({ type: 'thinking', text: 'analyzing...' });
 
-      const blocks = processor.getState().streamingMessage!.blocks;
+      const blocks = blocksOf(processor);
       expect(blocks.length).toBe(1);
       expect(blocks[0]).toEqual({ type: 'thinking', text: 'analyzing...' });
     });
@@ -387,7 +394,7 @@ describe('useAgentStream event processing', () => {
 
       const state = processor.getState();
       expect(state.isStreaming).toBe(false);
-      const blocks = state.streamingMessage!.blocks;
+      const blocks = blocksOf(processor);
       expect(blocks.length).toBe(1);
       expect(blocks[0]).toEqual({ type: 'text', text: 'Error: rate limit exceeded' });
     });
@@ -396,7 +403,7 @@ describe('useAgentStream event processing', () => {
       processor.processEvent({ type: 'run_started', runId: 'r1' });
       processor.processEvent({ type: 'run_error', message: 'timeout' });
 
-      const blocks = processor.getState().streamingMessage!.blocks;
+      const blocks = blocksOf(processor);
       expect(blocks[0]).toEqual({ type: 'text', text: 'Error: timeout' });
     });
 
@@ -404,7 +411,7 @@ describe('useAgentStream event processing', () => {
       processor.processEvent({ type: 'run_started', runId: 'r1' });
       processor.processEvent({ type: 'run_error' });
 
-      const blocks = processor.getState().streamingMessage!.blocks;
+      const blocks = blocksOf(processor);
       expect(blocks[0]).toEqual({ type: 'text', text: 'Error: Agent run failed' });
     });
 
@@ -424,7 +431,7 @@ describe('useAgentStream event processing', () => {
       processor.processEvent({ type: 'text_delta', text: 'before' });
       processor.processEvent({ type: 'status' } as any);
 
-      const blocks = processor.getState().streamingMessage!.blocks;
+      const blocks = blocksOf(processor);
       expect(blocks.length).toBe(1);
     });
   });
@@ -458,14 +465,13 @@ describe('useAgentStream event processing', () => {
       const state = processor.getState();
       expect(state.isStreaming).toBe(false);
       // 4 blocks: thinking, tool_call (marked done in-place), tool_result, text
-      expect(state.streamingMessage!.blocks.length).toBe(4);
-      expect(state.streamingMessage!.blocks[0].type).toBe('thinking');
-      expect(state.streamingMessage!.blocks[1].type).toBe('tool_call');
-      expect(state.streamingMessage!.blocks[2].type).toBe('tool_result');
-      expect(state.streamingMessage!.blocks[3].type).toBe('text');
-      expect((state.streamingMessage!.blocks[3] as any).text).toBe(
-        'Based on my search, here are the results.',
-      );
+      const blocks = blocksOf(processor);
+      expect(blocks.length).toBe(4);
+      expect(blocks[0].type).toBe('thinking');
+      expect(blocks[1].type).toBe('tool_call');
+      expect(blocks[2].type).toBe('tool_result');
+      expect(blocks[3].type).toBe('text');
+      expect((blocks[3] as any).text).toBe('Based on my search, here are the results.');
       expect(state.streamingMessage?.usage).toEqual({
         inputTokens: 500,
         outputTokens: 200,
@@ -483,7 +489,7 @@ describe('useAgentStream event processing', () => {
       processor.processEvent({ type: 'run_started', runId: 'r1', conversationId: 'conv-1' });
       processor.processEvent({ type: 'text_delta', text: 'hello', conversationId: 'conv-1' });
 
-      expect(processor.getState().streamingMessage!.blocks.length).toBe(1);
+      expect(blocksOf(processor).length).toBe(1);
     });
   });
 });
