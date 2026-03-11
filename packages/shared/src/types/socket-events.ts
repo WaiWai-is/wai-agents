@@ -27,4 +27,10 @@ export interface ClientToServerEvents {
   'typing:stop': (data: { conversationId: string }) => void;
   read: (data: { conversationId: string; messageId: string }) => void;
   'agent:stop': (data: { conversationId: string }) => void;
+  approval_decision: (data: {
+    conversationId: string;
+    requestId: string;
+    decision: 'approve' | 'deny';
+    scope: string;
+  }) => void;
 }

@@ -50,6 +50,14 @@ export const RunErrorEventSchema = z.object({
   error: z.string(),
 });
 
+export const ToolApprovalRequestEventSchema = z.object({
+  type: z.literal('tool_approval_request'),
+  request_id: z.string(),
+  tool_name: z.string(),
+  args_preview: z.string(),
+  scopes: z.array(z.string()),
+});
+
 export const AgentEventSchema = z.discriminatedUnion('type', [
   RunStartedEventSchema,
   TextDeltaEventSchema,
@@ -59,6 +67,7 @@ export const AgentEventSchema = z.discriminatedUnion('type', [
   ThinkingEventSchema,
   RunFinishedEventSchema,
   RunErrorEventSchema,
+  ToolApprovalRequestEventSchema,
 ]);
 
 export type AgentEvent = z.infer<typeof AgentEventSchema>;
@@ -70,3 +79,4 @@ export type StepStartedEvent = z.infer<typeof StepStartedEventSchema>;
 export type ThinkingEvent = z.infer<typeof ThinkingEventSchema>;
 export type RunFinishedEvent = z.infer<typeof RunFinishedEventSchema>;
 export type RunErrorEvent = z.infer<typeof RunErrorEventSchema>;
+export type ToolApprovalRequestEvent = z.infer<typeof ToolApprovalRequestEventSchema>;

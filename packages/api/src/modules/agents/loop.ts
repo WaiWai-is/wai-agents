@@ -4,6 +4,7 @@ import { db, sql } from '../../db/connection.js';
 import { agents } from '../../db/schema/agents.js';
 import { messages } from '../../db/schema/conversations.js';
 import { emitAgentEvent, emitMessage } from '../../ws/emitter.js';
+import { approvalGate } from './approval-gate.js';
 import { callLLM } from './llm/index.js';
 import { McpManager } from './mcp-manager.js';
 import type { CallerContext } from './soul.js';
@@ -45,6 +46,13 @@ export async function runAgentLoop(config: AgentLoopConfig): Promise<AgentLoopRe
   const mcpServers = (agent.mcpServers as Array<{ url: string; name: string }>) ?? [];
   await mcpManager.connect(mcpServers);
   const tools = mcpManager.getTools();
+
+  // 3b. Build set of tools that require human approval
+  const agentToolConfigs =
+    (agent.tools as Array<{ name: string; requires_approval?: boolean }>) ?? [];
+  const approvalRequired = new Set<string>(
+    agentToolConfigs.filter((t) => t.requires_approval).map((t) => t.name),
+  );
 
   // 4. Load recent conversation history (last 20 messages, excluding current)
   const history = await db
@@ -113,6 +121,30 @@ export async function runAgentLoop(config: AgentLoopConfig): Promise<AgentLoopRe
 
       // Process tool calls
       for (const toolCall of llmResponse.toolCalls) {
+        // Approval gate: check if this tool requires human approval
+        if (approvalRequired.has(toolCall.name)) {
+          if (!approvalGate.isApproved(conversationId, toolCall.name)) {
+            const decision = await approvalGate.requestApproval(
+              conversationId,
+              toolCall.name,
+              toolCall.input,
+            );
+
+            if (!decision.approved) {
+              // Feed denial back to LLM so it can adapt
+              chatMessages.push({
+                role: 'assistant',
+                content: `[Tool: ${toolCall.name}] ${JSON.stringify(toolCall.input)}`,
+              });
+              chatMessages.push({
+                role: 'user',
+                content: `[Tool Denied: ${toolCall.name}] The user denied this tool call. Do not retry this tool without a different approach.`,
+              });
+              continue;
+            }
+          }
+        }
+
         const callId = randomUUID();
         emitAgentEvent(conversationId, {
           type: 'tool_call_start',

@@ -1,5 +1,6 @@
 import type { Socket, Server as SocketIOServer } from 'socket.io';
 import { sql } from '../db/connection.js';
+import { type ApprovalScope, approvalGate } from '../modules/agents/approval-gate.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -63,9 +64,31 @@ export function setupAgentHandlers(io: SocketIOServer): void {
         error: 'Stopped by user',
       });
     });
+
+    socket.on(
+      'approval_decision',
+      (data: { conversationId: string; requestId: string; decision: string; scope: string }) => {
+        if (!checkSocketRate(socket)) return;
+        if (!data.requestId || !data.decision) return;
+        if (data.conversationId && !UUID_RE.test(data.conversationId)) return;
+
+        const decision = data.decision === 'approve' ? 'approve' : 'deny';
+        const validScopes: ApprovalScope[] = [
+          'allow_once',
+          'allow_session',
+          'allow_always',
+          'deny',
+        ];
+        const scope: ApprovalScope = validScopes.includes(data.scope as ApprovalScope)
+          ? (data.scope as ApprovalScope)
+          : 'allow_once';
+
+        approvalGate.resolveApproval(data.requestId, decision, scope);
+      },
+    );
   });
 }
 
 // Outbound AG-UI events are sent via emitter.ts: emitAgentEvent()
 // Event types: run_started, text_delta, tool_call_start, tool_call_end,
-//              step_started, thinking, run_finished, run_error
+//              step_started, thinking, run_finished, run_error, tool_approval_request

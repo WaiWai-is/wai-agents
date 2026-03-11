@@ -260,7 +260,8 @@ export type AgentStreamEvent = {
     | 'thinking'
     | 'run_finished'
     | 'run_error'
-    | 'status';
+    | 'status'
+    | 'tool_approval_request';
   runId?: string;
   agentId?: string;
   conversationId?: string;
@@ -273,4 +274,9 @@ export type AgentStreamEvent = {
   usage?: { inputTokens: number; outputTokens: number };
   message?: string;
   error?: string;
+  // Tool approval request fields
+  request_id?: string;
+  tool_name?: string;
+  args_preview?: string;
+  scopes?: string[];
 };

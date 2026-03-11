@@ -288,6 +288,18 @@ export function ChatView({
         setToolLog((prev) => [localEvent, ...prev].slice(0, 40));
       }
 
+      if (event.type === 'tool_approval_request' && event.request_id && event.tool_name) {
+        setApprovalRequests((prev) => [
+          ...prev,
+          {
+            request_id: event.request_id as string,
+            tool: event.tool_name as string,
+            args_preview: event.args_preview ?? '{}',
+            scopes: event.scopes ?? ['allow_once', 'allow_session', 'allow_always'],
+          },
+        ]);
+      }
+
       if (event.type === 'run_finished' || event.type === 'run_error') {
         setAgentStatus(null);
       }
