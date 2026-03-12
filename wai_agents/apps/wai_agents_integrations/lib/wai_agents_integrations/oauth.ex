@@ -133,7 +133,7 @@ defmodule WaiAgentsIntegrations.OAuth do
   end
 
   defp callback_url(service) do
-    base_url = Application.get_env(:wai_agents_integrations, :base_url, "https://waiagents.com")
+    base_url = Application.get_env(:wai_agents_integrations, :base_url, "https://openraccoon.com")
     "#{base_url}/api/v1/integrations/callback/#{service}"
   end
 

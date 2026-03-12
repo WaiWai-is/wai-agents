@@ -225,7 +225,7 @@ struct AppStateTests {
     @Test("AppState can be initialized with custom base URL")
     @MainActor
     func customBaseURL() {
-        let customURL = URL(string: "https://staging.waiagents.com")!
+        let customURL = URL(string: "https://staging.openraccoon.com")!
         let state = AppState(baseURL: customURL)
         #expect(state.currentUser == nil)
         #expect(state.isAuthenticated == false)

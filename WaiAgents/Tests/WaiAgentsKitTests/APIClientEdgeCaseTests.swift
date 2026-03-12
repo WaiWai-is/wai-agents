@@ -4,7 +4,7 @@ import Testing
 
 @Suite("APIClient Edge Cases")
 struct APIClientEdgeCaseTests {
-    let baseURL = URL(string: "https://waiagents.com")!
+    let baseURL = URL(string: "https://openraccoon.com")!
 
     // MARK: - Request Construction with All HTTP Methods
 

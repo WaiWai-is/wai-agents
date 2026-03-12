@@ -8,7 +8,7 @@ It reflects the current codebase across both active stacks:
 - the root TypeScript/web workspace (`packages/*`, `web/`)
 - the Elixir umbrella + Python runtime + Swift client (`wai_agents/`, `agent_runtime/`, `WaiAgents/`)
 
-`CLAUDE.md` remains the main operational guide for the TypeScript/web deployment and public `waiagents.com` surface.
+`CLAUDE.md` remains the main operational guide for the TypeScript/web deployment and public `openraccoon.com` surface.
 
 ## Source of truth
 Use this precedence when behavior conflicts:
@@ -104,7 +104,7 @@ xcodebuild -scheme WaiAgents-macOS -configuration Debug -derivedDataPath build/D
 #### Auth and users
 - Public deployment serves password auth, register, refresh, logout, magic-link request/verify, `GET /users/me`, `PATCH /users/me`, and public `GET /users/:username`.
 - Root `web/` auth shell persists session in Zustand and restores by calling `/users/me`.
-- On March 5, 2026, the public seeded-user login path `alex@waiagents.com / TestPass123!` still returned HTTP 200.
+- On March 5, 2026, the public seeded-user login path `alex@openraccoon.com / TestPass123!` still returned HTTP 200.
 
 #### Chat and realtime
 - TypeScript API uses Socket.IO at `/socket.io`; current web chat is wired to `socket.io-client`.
@@ -117,9 +117,9 @@ xcodebuild -scheme WaiAgents-macOS -configuration Debug -derivedDataPath build/D
 - Internal agent-to-agent execution exists behind `/api/v1/internal/agent/execute` and the `packages/mcp-servers/agent-comm` server, but there is no first-class browser UI for multi-agent conversations.
 
 #### Public deployment gaps seen on March 5, 2026
-- `https://waiagents.com/api/v1/pages` returned `404`.
-- `https://waiagents.com/api/v1/bridges` returned `404`.
-- `https://waiagents.com/api/v1/users/me/usage` returned `404`.
+- `https://openraccoon.com/api/v1/pages` returned `404`.
+- `https://openraccoon.com/api/v1/bridges` returned `404`.
+- `https://openraccoon.com/api/v1/users/me/usage` returned `404`.
 - `POST /auth/magic-link` and invalid `POST /auth/magic-link/verify` returned `500` in the shipped shell smoke script.
 
 ### Current implemented surface (Elixir umbrella)
@@ -190,9 +190,9 @@ xcodebuild -scheme WaiAgents-macOS -configuration Debug -derivedDataPath build/D
 
 ## Operational notes
 ### Public TypeScript/web deployment (`CLAUDE.md`)
-- API base: `https://waiagents.com/api/v1`
-- Web realtime: `https://waiagents.com/socket.io/`
-- Public web origin: `https://waiagents.com`
+- API base: `https://openraccoon.com/api/v1`
+- Web realtime: `https://openraccoon.com/socket.io/`
+- Public web origin: `https://openraccoon.com`
 - SSH host in `CLAUDE.md`: `root@157.180.72.249`
 - Systemd services in `CLAUDE.md`: `waiagents-api`, `waiagents-web`, `waiagents-mcp-memory`, `waiagents-mcp-web-search`, `waiagents-mcp-pr-tools`, `waiagents-mcp-agent-comm`
 - DB/Redis/object storage paths and deploy commands for the TS/web stack live in `CLAUDE.md`; keep this file and `CLAUDE.md` in sync when those operational details change.

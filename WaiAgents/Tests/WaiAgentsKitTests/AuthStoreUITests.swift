@@ -11,7 +11,7 @@ struct AuthStoreUITests {
     @MainActor
     private func makeAuthStore() -> AuthStore {
         let authManager = AuthManager(serviceName: "test.authstore.ui.\(UUID().uuidString)")
-        let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+        let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
         return AuthStore(apiClient: apiClient, authManager: authManager)
     }
 

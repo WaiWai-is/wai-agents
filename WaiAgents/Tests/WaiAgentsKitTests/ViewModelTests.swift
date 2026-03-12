@@ -9,13 +9,13 @@ struct ViewModelTests {
 
     @Suite("ConversationListViewModel")
     struct ConversationListViewModelTests {
-        private let baseURL = URL(string: "https://waiagents.com")!
+        private let baseURL = URL(string: "https://openraccoon.com")!
 
         @Test("Initial state has empty conversations")
         @MainActor
         func initialStateEmpty() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationListViewModel(apiClient: apiClient)
             #expect(vm.conversations.isEmpty)
         }
@@ -24,7 +24,7 @@ struct ViewModelTests {
         @MainActor
         func initialStateNotLoading() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationListViewModel(apiClient: apiClient)
             #expect(vm.isLoading == false)
         }
@@ -33,7 +33,7 @@ struct ViewModelTests {
         @MainActor
         func initialStateNoError() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationListViewModel(apiClient: apiClient)
             #expect(vm.error == nil)
         }
@@ -42,7 +42,7 @@ struct ViewModelTests {
         @MainActor
         func initWithConversationStore() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let store = ConversationStore()
             let vm = ConversationListViewModel(apiClient: apiClient, conversationStore: store)
             #expect(vm.conversations.isEmpty)
@@ -58,7 +58,7 @@ struct ViewModelTests {
         @MainActor
         func initialStateEmpty() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = FeedViewModel(apiClient: apiClient)
             #expect(vm.feedItems.isEmpty)
         }
@@ -67,7 +67,7 @@ struct ViewModelTests {
         @MainActor
         func initialStateNotLoading() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = FeedViewModel(apiClient: apiClient)
             #expect(vm.isLoading == false)
         }
@@ -76,7 +76,7 @@ struct ViewModelTests {
         @MainActor
         func initialStateNotRefreshing() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = FeedViewModel(apiClient: apiClient)
             #expect(vm.isRefreshing == false)
         }
@@ -85,7 +85,7 @@ struct ViewModelTests {
         @MainActor
         func initialStateNoError() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = FeedViewModel(apiClient: apiClient)
             #expect(vm.error == nil)
         }
@@ -94,7 +94,7 @@ struct ViewModelTests {
         @MainActor
         func initialStateLikedItemsEmpty() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = FeedViewModel(apiClient: apiClient)
             #expect(vm.likedItemIDs.isEmpty)
         }
@@ -103,7 +103,7 @@ struct ViewModelTests {
         @MainActor
         func isLikedFalseForUnknown() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = FeedViewModel(apiClient: apiClient)
             #expect(vm.isLiked("feed_1") == false)
         }
@@ -132,7 +132,7 @@ struct ViewModelTests {
         @MainActor
         func likeItemOptimisticUpdate() async {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = FeedViewModel(apiClient: apiClient)
 
             let feedItem = FeedItem(
@@ -158,7 +158,7 @@ struct ViewModelTests {
         @MainActor
         func unlikeItemOptimisticUpdate() async {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = FeedViewModel(apiClient: apiClient)
 
             let feedItem = FeedItem(
@@ -185,7 +185,7 @@ struct ViewModelTests {
         @MainActor
         func likeCountFloorZero() async {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = FeedViewModel(apiClient: apiClient)
 
             let feedItem = FeedItem(
@@ -214,7 +214,7 @@ struct ViewModelTests {
         @MainActor
         func initialStateEmpty() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = MarketplaceViewModel(apiClient: apiClient)
             #expect(vm.agents.isEmpty)
         }
@@ -223,7 +223,7 @@ struct ViewModelTests {
         @MainActor
         func initialStateNotLoading() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = MarketplaceViewModel(apiClient: apiClient)
             #expect(vm.isLoading == false)
         }
@@ -232,7 +232,7 @@ struct ViewModelTests {
         @MainActor
         func initialStateNoError() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = MarketplaceViewModel(apiClient: apiClient)
             #expect(vm.error == nil)
         }
@@ -247,7 +247,7 @@ struct ViewModelTests {
         @MainActor
         func initialConversationID() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "conv_42",
                 apiClient: apiClient,
@@ -260,7 +260,7 @@ struct ViewModelTests {
         @MainActor
         func initialMessagesEmpty() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "conv_1",
                 apiClient: apiClient,
@@ -273,7 +273,7 @@ struct ViewModelTests {
         @MainActor
         func initialNotLoading() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "conv_1",
                 apiClient: apiClient,
@@ -286,7 +286,7 @@ struct ViewModelTests {
         @MainActor
         func initialNotTyping() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "conv_1",
                 apiClient: apiClient,
@@ -299,7 +299,7 @@ struct ViewModelTests {
         @MainActor
         func initialNotGenerating() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "conv_1",
                 apiClient: apiClient,
@@ -312,7 +312,7 @@ struct ViewModelTests {
         @MainActor
         func initialEmptyInput() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "conv_1",
                 apiClient: apiClient,
@@ -325,7 +325,7 @@ struct ViewModelTests {
         @MainActor
         func initialEmptyGroupedMessages() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "conv_1",
                 apiClient: apiClient,
@@ -338,7 +338,7 @@ struct ViewModelTests {
         @MainActor
         func sendMessageIgnoresEmpty() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "conv_1",
                 apiClient: apiClient,
@@ -359,7 +359,7 @@ struct ViewModelTests {
         @MainActor
         func sendMessageOptimistic() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "conv_1",
                 apiClient: apiClient,
@@ -379,7 +379,7 @@ struct ViewModelTests {
         @MainActor
         func settingMessagesRebuildsGroups() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "conv_1",
                 apiClient: apiClient,
@@ -415,7 +415,7 @@ struct ViewModelTests {
         @MainActor
         func sameGroupMessages() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "conv_1",
                 apiClient: apiClient,
@@ -452,7 +452,7 @@ struct ViewModelTests {
         @MainActor
         func separateGroupsByTime() {
             let authManager = AuthManager(serviceName: "test.vm.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "conv_1",
                 apiClient: apiClient,

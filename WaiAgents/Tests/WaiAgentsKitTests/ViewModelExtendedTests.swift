@@ -16,7 +16,7 @@ struct ViewModelExtendedTests {
         @MainActor
         private func makeVM() -> ConversationDetailViewModel {
             let authManager = AuthManager(serviceName: "test.vmext.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             return ConversationDetailViewModel(
                 conversationID: "conv_1",
                 apiClient: apiClient,
@@ -172,7 +172,7 @@ struct ViewModelExtendedTests {
         @MainActor
         private func makeVM() -> ConversationDetailViewModel {
             let authManager = AuthManager(serviceName: "test.send.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             return ConversationDetailViewModel(
                 conversationID: "conv_send",
                 apiClient: apiClient,
@@ -250,7 +250,7 @@ struct ViewModelExtendedTests {
         @MainActor
         private func makeVM() -> FeedViewModel {
             let authManager = AuthManager(serviceName: "test.feed.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             return FeedViewModel(apiClient: apiClient)
         }
 
@@ -346,7 +346,7 @@ struct ViewModelExtendedTests {
         @MainActor
         private func makeVM() -> MarketplaceViewModel {
             let authManager = AuthManager(serviceName: "test.mp.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             return MarketplaceViewModel(apiClient: apiClient)
         }
 

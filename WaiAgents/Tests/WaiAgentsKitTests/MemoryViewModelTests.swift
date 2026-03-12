@@ -11,7 +11,7 @@ import Testing
 @Suite("Memory ViewModel Tests")
 struct MemoryViewModelTests {
 
-    private let baseURL = URL(string: "https://waiagents.com")!
+    private let baseURL = URL(string: "https://openraccoon.com")!
 
     // MARK: - Helpers
 

@@ -65,7 +65,7 @@ config :swoosh, :api_client, Swoosh.ApiClient.Req
 config :wai_agents_shared, WaiAgentsShared.Mailer, adapter: Swoosh.Adapters.Resend
 
 # Base URL for magic links and email callbacks
-config :wai_agents_gateway, :base_url, "https://waiagents.com"
+config :wai_agents_gateway, :base_url, "https://openraccoon.com"
 
 # JSON library
 config :phoenix, :json_library, Jason

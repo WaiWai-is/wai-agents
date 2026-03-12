@@ -8,7 +8,7 @@ import Testing
 @Suite("Settings & Profile ViewModel Tests")
 struct SettingsViewModelTests {
 
-    private let baseURL = URL(string: "https://waiagents.com")!
+    private let baseURL = URL(string: "https://openraccoon.com")!
 
     // MARK: - Helpers
 
@@ -167,12 +167,12 @@ struct SettingsViewModelTests {
         {
             "id": "u1",
             "username": "user1",
-            "avatar_url": "https://cdn.waiagents.com/avatars/user1.jpg",
+            "avatar_url": "https://cdn.openraccoon.com/avatars/user1.jpg",
             "created_at": "2026-03-01T08:00:00Z"
         }
         """.data(using: .utf8)!
         let user = try JSONDecoder.waiagents.decode(User.self, from: json)
-        #expect(user.avatarURL?.absoluteString == "https://cdn.waiagents.com/avatars/user1.jpg")
+        #expect(user.avatarURL?.absoluteString == "https://cdn.openraccoon.com/avatars/user1.jpg")
     }
 
     @Test("User without avatar URL has nil avatarURL")
@@ -190,7 +190,7 @@ struct SettingsViewModelTests {
         {
             "id": "u1",
             "username": "user1",
-            "avatar_url": "https://cdn.waiagents.com/avatars/user1.jpg?w=200&h=200",
+            "avatar_url": "https://cdn.openraccoon.com/avatars/user1.jpg?w=200&h=200",
             "created_at": "2026-03-01T08:00:00Z"
         }
         """.data(using: .utf8)!

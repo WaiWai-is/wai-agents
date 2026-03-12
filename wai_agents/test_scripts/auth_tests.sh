@@ -7,7 +7,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/helpers.sh"
 
-BASE="${BASE_URL:-https://waiagents.com/api/v1}"
+BASE="${BASE_URL:-https://openraccoon.com/api/v1}"
 
 # Auth endpoints are rate-limited to 5 requests/minute per IP.
 # We need >=13s between each auth request to stay under the limit.
@@ -22,19 +22,19 @@ TS=$(date +%s)
 
 # Test account definitions
 ALICE_USERNAME="alice_${TS}"
-ALICE_EMAIL="alice_${TS}@waiagents.com"
+ALICE_EMAIL="alice_${TS}@openraccoon.com"
 ALICE_PASSWORD="Alice12345"
 
 BOB_USERNAME="bob_${TS}"
-BOB_EMAIL="bob_${TS}@waiagents.com"
+BOB_EMAIL="bob_${TS}@openraccoon.com"
 BOB_PASSWORD="Bob12345"
 
 CHARLIE_USERNAME="charlie_${TS}"
-CHARLIE_EMAIL="charlie_${TS}@waiagents.com"
+CHARLIE_EMAIL="charlie_${TS}@openraccoon.com"
 CHARLIE_PASSWORD="Charlie12345"
 
 DIANA_USERNAME="diana_${TS}"
-DIANA_EMAIL="diana_${TS}@waiagents.com"
+DIANA_EMAIL="diana_${TS}@openraccoon.com"
 DIANA_PASSWORD="Diana12345"
 
 # Storage for tokens and IDs
@@ -118,7 +118,7 @@ if [[ "$ALICE_REGISTERED" == true ]]; then
 
   log_info "Registering duplicate username (alice's username with different email)..."
   make_request POST "/auth/register" \
-    "{\"username\":\"$ALICE_USERNAME\",\"email\":\"duplicate_user_${TS}@waiagents.com\",\"password\":\"Duplicate1234\"}"
+    "{\"username\":\"$ALICE_USERNAME\",\"email\":\"duplicate_user_${TS}@openraccoon.com\",\"password\":\"Duplicate1234\"}"
   assert_status_in "Register duplicate username" "$HTTP_STATUS" 409 422
   auth_delay
 else
@@ -129,7 +129,7 @@ fi
 
 log_info "Registering with empty username..."
 make_request POST "/auth/register" \
-  "{\"username\":\"\",\"email\":\"empty_user_${TS}@waiagents.com\",\"password\":\"ValidPass123\"}"
+  "{\"username\":\"\",\"email\":\"empty_user_${TS}@openraccoon.com\",\"password\":\"ValidPass123\"}"
 assert_status_in "Register empty username" "$HTTP_STATUS" 422 400
 auth_delay
 
@@ -137,7 +137,7 @@ auth_delay
 
 log_info "Registering with too-short password (< 8 chars)..."
 make_request POST "/auth/register" \
-  "{\"username\":\"shortpw_${TS}\",\"email\":\"shortpw_${TS}@waiagents.com\",\"password\":\"Ab1\"}"
+  "{\"username\":\"shortpw_${TS}\",\"email\":\"shortpw_${TS}@openraccoon.com\",\"password\":\"Ab1\"}"
 assert_status_in "Register short password" "$HTTP_STATUS" 422 400
 auth_delay
 
@@ -208,7 +208,7 @@ assert_status_in "Login wrong password" "$HTTP_STATUS" 401 400
 log_info "Login with non-existent email..."
 auth_delay
 make_request POST "/auth/login" \
-  "{\"email\":\"nonexistent_${TS}@waiagents.com\",\"password\":\"SomePass123\"}"
+  "{\"email\":\"nonexistent_${TS}@openraccoon.com\",\"password\":\"SomePass123\"}"
 assert_status_in "Login non-existent email" "$HTTP_STATUS" 401 404
 
 # --- Empty password ---
@@ -377,7 +377,7 @@ assert_status "200" "$HTTP_STATUS" "Magic link request (alice)"
 log_info "POST /auth/magic-link for non-existent email..."
 auth_delay
 make_request POST "/auth/magic-link" \
-  "{\"email\":\"nonexistent_magic_${TS}@waiagents.com\"}"
+  "{\"email\":\"nonexistent_magic_${TS}@openraccoon.com\"}"
 assert_status "200" "$HTTP_STATUS" "Magic link non-existent email (no info leak)"
 
 # --- Verify magic link with garbage token ---

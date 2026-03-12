@@ -38,7 +38,7 @@ Options:
   --soak-hours HOURS         Soak duration in hours (default: SOAK_DURATION_HOURS or 4).
   --soak-log FILE            Soak log file path (default: /tmp/wai_agents_soak_test.log).
   --summary-json FILE        Write machine-readable summary JSON.
-  --base-url URL             API base URL, e.g. https://waiagents.com/api/v1
+  --base-url URL             API base URL, e.g. https://openraccoon.com/api/v1
   --help                     Show this help.
 EOF
 }
@@ -101,7 +101,7 @@ echo -e "${BOLD}║       WaiAgents — Full Test Suite             ║${NC}"
 echo -e "${BOLD}║       $(date '+%Y-%m-%d %H:%M:%S')                       ║${NC}"
 echo -e "${BOLD}╚══════════════════════════════════════════════════╝${NC}"
 echo ""
-echo "Base URL: ${BASE_URL:-https://waiagents.com/api/v1}"
+echo "Base URL: ${BASE_URL:-https://openraccoon.com/api/v1}"
 echo "Non-interactive: $NON_INTERACTIVE"
 echo ""
 

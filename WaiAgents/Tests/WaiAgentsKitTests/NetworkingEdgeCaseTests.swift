@@ -93,7 +93,7 @@ struct NetworkingEdgeCaseTests {
 
     @Suite("APIEndpoint URL Construction")
     struct APIEndpointURLTests {
-        private let baseURL = URL(string: "https://waiagents.com")!
+        private let baseURL = URL(string: "https://openraccoon.com")!
 
         @Test("Auth endpoints are not authenticated")
         func authEndpointsNoAuth() {

@@ -31,7 +31,7 @@ struct WebSocketClientTests {
 
     @Test("WebSocketClient initializes with HTTPS base URL")
     func initWithHTTPS() {
-        let client = makeClient(baseURL: "https://waiagents.com")
+        let client = makeClient(baseURL: "https://openraccoon.com")
         _ = client // Should not crash
     }
 
@@ -63,13 +63,13 @@ struct WebSocketClientTests {
 
     @Test("WebSocketClient initializes with base URL containing path")
     func initWithPathInURL() {
-        let client = makeClient(baseURL: "https://waiagents.com/api/v1")
+        let client = makeClient(baseURL: "https://openraccoon.com/api/v1")
         _ = client
     }
 
     @Test("WebSocketClient initializes with base URL containing port")
     func initWithPort() {
-        let client = makeClient(baseURL: "https://waiagents.com:4000")
+        let client = makeClient(baseURL: "https://openraccoon.com:4000")
         _ = client
     }
 
@@ -584,11 +584,11 @@ struct WebSocketClientTests {
 
     @Test("HTTPS base URL converts to WSS in socket URL")
     func httpsToWss() {
-        let baseURL = "https://waiagents.com"
+        let baseURL = "https://openraccoon.com"
         let wsURL = baseURL
             .replacingOccurrences(of: "https://", with: "wss://")
             .replacingOccurrences(of: "http://", with: "ws://")
-        #expect(wsURL == "wss://waiagents.com")
+        #expect(wsURL == "wss://openraccoon.com")
     }
 
     @Test("HTTP base URL converts to WS in socket URL")
@@ -602,9 +602,9 @@ struct WebSocketClientTests {
 
     @Test("Socket URL has /socket suffix")
     func socketURLSuffix() {
-        let wsURL = "wss://waiagents.com"
+        let wsURL = "wss://openraccoon.com"
         let fullPath = "\(wsURL)/socket"
-        #expect(fullPath == "wss://waiagents.com/socket")
+        #expect(fullPath == "wss://openraccoon.com/socket")
     }
 
     // MARK: - decodeConversationMessage Static Helper

@@ -12,7 +12,7 @@ source "$SCRIPT_DIR/helpers.sh"
 
 # Persona definitions
 USERNAMES=( alex_dev maya_writer sam_designer jordan_student taylor_data riley_pm casey_research morgan_maker avery_teacher quinn_admin )
-EMAILS=(    alex@waiagents.com maya@waiagents.com sam@waiagents.com jordan@waiagents.com taylor@waiagents.com riley@waiagents.com casey@waiagents.com morgan@waiagents.com avery@waiagents.com quinn@waiagents.com )
+EMAILS=(    alex@openraccoon.com maya@openraccoon.com sam@openraccoon.com jordan@openraccoon.com taylor@openraccoon.com riley@openraccoon.com casey@openraccoon.com morgan@openraccoon.com avery@openraccoon.com quinn@openraccoon.com )
 PASSWORD="TestPass123!"
 
 # Storage for tokens (parallel arrays indexed same as USERNAMES)

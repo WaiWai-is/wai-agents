@@ -8,7 +8,7 @@ import Testing
 @Suite("Agent ViewModel Tests")
 struct AgentViewModelTests {
 
-    private let baseURL = URL(string: "https://waiagents.com")!
+    private let baseURL = URL(string: "https://openraccoon.com")!
 
     // MARK: - Helpers
 

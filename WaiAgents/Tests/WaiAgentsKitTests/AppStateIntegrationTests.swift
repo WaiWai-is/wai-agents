@@ -8,7 +8,7 @@ import Testing
 @Suite("AppState Integration Tests")
 struct AppStateIntegrationTests {
 
-    private let baseURL = URL(string: "https://waiagents.com")!
+    private let baseURL = URL(string: "https://openraccoon.com")!
 
     // MARK: - Helpers
 
@@ -106,7 +106,7 @@ struct AppStateIntegrationTests {
     @Test("AppState can be initialized with custom base URL")
     @MainActor
     func initCustomBaseURL() {
-        let state = makeAppState(baseURL: URL(string: "https://staging.waiagents.com")!)
+        let state = makeAppState(baseURL: URL(string: "https://staging.openraccoon.com")!)
         #expect(state.currentUser == nil)
     }
 

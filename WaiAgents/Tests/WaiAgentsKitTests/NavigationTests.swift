@@ -9,7 +9,7 @@ import Testing
 @Suite("Navigation Tests")
 struct NavigationTests {
 
-    private let baseURL = URL(string: "https://waiagents.com")!
+    private let baseURL = URL(string: "https://openraccoon.com")!
 
     // MARK: - Helpers
 

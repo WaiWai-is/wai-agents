@@ -4,7 +4,7 @@ import Testing
 
 @Suite("APIClient")
 struct APIClientTests {
-    let baseURL = URL(string: "https://waiagents.com")!
+    let baseURL = URL(string: "https://openraccoon.com")!
 
     // MARK: - URLRequest Construction from APIEndpoint
 
@@ -13,7 +13,7 @@ struct APIClientTests {
         let endpoint = APIEndpoint.me
         let request = try endpoint.urlRequest(baseURL: baseURL)
         #expect(request.url?.absoluteString.contains("/api/v1/users/me") == true)
-        #expect(request.url?.host == "waiagents.com")
+        #expect(request.url?.host == "openraccoon.com")
         #expect(request.url?.scheme == "https")
     }
 

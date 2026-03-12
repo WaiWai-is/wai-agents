@@ -180,7 +180,7 @@ struct UIFlowIntegrationTests {
         @MainActor
         func optimisticMessageVisible() {
             let authManager = AuthManager(serviceName: "test.flow.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "conv_1",
                 apiClient: apiClient,
@@ -200,7 +200,7 @@ struct UIFlowIntegrationTests {
         @MainActor
         func messageGroupsForDisplay() {
             let authManager = AuthManager(serviceName: "test.flow.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "conv_1",
                 apiClient: apiClient,
@@ -229,7 +229,7 @@ struct UIFlowIntegrationTests {
         @MainActor
         func firstGroupShowsDateSeparator() {
             let authManager = AuthManager(serviceName: "test.flow.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "conv_1",
                 apiClient: apiClient,
@@ -249,7 +249,7 @@ struct UIFlowIntegrationTests {
         @MainActor
         func differentDaysShowSeparators() {
             let authManager = AuthManager(serviceName: "test.flow.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "conv_1",
                 apiClient: apiClient,
@@ -330,7 +330,7 @@ struct UIFlowIntegrationTests {
         @MainActor
         func feedViewModelInitialState() {
             let authManager = AuthManager(serviceName: "test.flow.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = FeedViewModel(apiClient: apiClient)
 
             #expect(vm.feedItems.isEmpty)
@@ -363,7 +363,7 @@ struct UIFlowIntegrationTests {
         @MainActor
         func toggleLikeState() async {
             let authManager = AuthManager(serviceName: "test.flow.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = FeedViewModel(apiClient: apiClient)
 
             let item = FeedItem(
@@ -390,7 +390,7 @@ struct UIFlowIntegrationTests {
         @MainActor
         func feedRefreshClearsCache() async {
             let authManager = AuthManager(serviceName: "test.flow.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = FeedViewModel(apiClient: apiClient)
 
             // The refresh function will clear the cache for the tab, even if network fails
@@ -410,7 +410,7 @@ struct UIFlowIntegrationTests {
         @MainActor
         func marketplaceInitialState() {
             let authManager = AuthManager(serviceName: "test.flow.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = MarketplaceViewModel(apiClient: apiClient)
 
             #expect(vm.agents.isEmpty)
@@ -441,7 +441,7 @@ struct UIFlowIntegrationTests {
         @MainActor
         func searchEmptyQueryLoadsAll() async {
             let authManager = AuthManager(serviceName: "test.flow.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = MarketplaceViewModel(apiClient: apiClient)
 
             // Searching with empty/whitespace triggers loadAgents instead
@@ -519,7 +519,7 @@ struct UIFlowIntegrationTests {
         @MainActor
         func singleMessageOneGroup() {
             let authManager = AuthManager(serviceName: "test.group.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "c1",
                 apiClient: apiClient,
@@ -540,7 +540,7 @@ struct UIFlowIntegrationTests {
         @MainActor
         func emptyMessagesNoGroups() {
             let authManager = AuthManager(serviceName: "test.group.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "c1",
                 apiClient: apiClient,
@@ -555,7 +555,7 @@ struct UIFlowIntegrationTests {
         @MainActor
         func rapidSenderChange() {
             let authManager = AuthManager(serviceName: "test.group.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "c1",
                 apiClient: apiClient,
@@ -580,7 +580,7 @@ struct UIFlowIntegrationTests {
         @MainActor
         func exactlyTwoMinutesBoundary() {
             let authManager = AuthManager(serviceName: "test.group.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "c1",
                 apiClient: apiClient,
@@ -606,7 +606,7 @@ struct UIFlowIntegrationTests {
         @MainActor
         func justOverTwoMinutesBoundary() {
             let authManager = AuthManager(serviceName: "test.group.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "c1",
                 apiClient: apiClient,
@@ -631,7 +631,7 @@ struct UIFlowIntegrationTests {
         @MainActor
         func firstLastInGroup() {
             let authManager = AuthManager(serviceName: "test.group.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "c1",
                 apiClient: apiClient,
@@ -660,7 +660,7 @@ struct UIFlowIntegrationTests {
         @MainActor
         func sendMessageAgentReply() {
             let authManager = AuthManager(serviceName: "test.group.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "c1",
                 apiClient: apiClient,
@@ -678,7 +678,7 @@ struct UIFlowIntegrationTests {
         @MainActor
         func sendMessageNoAgentReply() {
             let authManager = AuthManager(serviceName: "test.group.\(UUID().uuidString)")
-            let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+            let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
             let vm = ConversationDetailViewModel(
                 conversationID: "c1",
                 apiClient: apiClient,

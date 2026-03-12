@@ -1,10 +1,18 @@
 # WaiAgents — TS/Web Deployment Guide
 
-Snapshot date: 2026-03-06
+Snapshot date: 2026-03-12
+
+## Repository
+
+- GitHub: `https://github.com/WaiWai-is/wai-agents`
+- Domain: `https://openraccoon.com`
+- CI: GitHub Actions (lint + typecheck + test)
+- Deploy: GitHub Actions → SSH → git pull → pnpm build → systemctl restart
+- Deploy gate: `vars.DEPLOY_ENABLED == 'true'` (set in repo settings)
 
 ## Scope
 
-This file covers the root pnpm workspace and the public `waiagents.com` deployment:
+This file covers the root pnpm workspace and the public `openraccoon.com` deployment:
 - `packages/api`
 - `packages/shared`
 - `packages/mcp-servers/*`
@@ -36,13 +44,13 @@ pnpm dev:web
 
 ## Public Deployment
 
-Verified from this machine on March 6, 2026:
-- Web origin: `https://waiagents.com`
-- API base: `https://waiagents.com/api/v1`
+Verified on March 12, 2026:
+- Web origin: `https://openraccoon.com`
+- API base: `https://openraccoon.com/api/v1`
 - Health: `GET /health` returns `200` with `{"status":"ok","service":"wai-agents-api",...}`
-- Realtime: Socket.IO is live at `https://waiagents.com/socket.io/`
-- `waiagents.com` resolves to `157.180.72.249`
-- Seeded login `alex@waiagents.com / TestPass123!` still returns `200`
+- Realtime: Socket.IO is live at `https://openraccoon.com/socket.io/`
+- `openraccoon.com` resolves to `157.180.72.249`
+- Seeded login `alex@openraccoon.com / TestPass123!` still returns `200`
 - Public profile `GET /users/alex_dev` still returns `200`
 
 Current public gaps and failures:
@@ -53,8 +61,9 @@ Current public gaps and failures:
 - Invalid `POST /auth/magic-link/verify` returns `500`
 
 Direct-host note:
-- TCP `22` and `4000` on `157.180.72.249` were reachable from this machine on March 6, 2026.
-- Direct `http://157.180.72.249:4000/api/v1/health` still timed out from this machine. Prefer the domain unless you are on-host.
+- TCP `22` on `157.180.72.249` is reachable. Port `4000` is not exposed externally.
+- Use `https://openraccoon.com` (nginx reverse proxy with Let's Encrypt SSL).
+- `api.openraccoon.com` is also configured for direct API access.
 
 ## Auth
 
@@ -67,7 +76,7 @@ Direct-host note:
   - `DELETE /auth/logout`
   - `POST /auth/magic-link`
   - `POST /auth/magic-link/verify`
-- Public deployment reality as of March 6, 2026:
+- Public deployment reality as of March 12, 2026:
   - password login works
   - logout works with `DELETE`
   - `POST /auth/logout` returns `404`
@@ -150,17 +159,26 @@ Not on the current public deployment:
 
 ## Deployment Notes
 
-Existing deployment docs still point to:
+Verified on-host March 12, 2026:
 - SSH: `root@157.180.72.249`
-- code dir: `/opt/wai-agents`
-- env file: `/opt/wai-agents/.env`
-- PostgreSQL: `wai_agents_prod` on localhost
+- Code dir: `/opt/wai-agents`
+- Env file: `/opt/wai-agents/.env`
+- PostgreSQL: `raccoon_prod` on localhost
 - Redis: `localhost:6379`
-- systemd services: `waiagents-api`, `waiagents-web`, `waiagents-mcp-memory`, `waiagents-mcp-web-search`, `waiagents-mcp-pr-tools`, `waiagents-mcp-agent-comm`
-- object storage: Hetzner Object Storage bucket `wai-agents`
+- Reverse proxy: nginx with Let's Encrypt SSL for `openraccoon.com` and `api.openraccoon.com`
+- Systemd services (all active): `waiagents-api`, `waiagents-web`, `waiagents-mcp-memory`, `waiagents-mcp-web-search`, `waiagents-mcp-pr-tools`, `waiagents-mcp-agent-comm`
+- Object storage: Hetzner Object Storage bucket `open-raccoon`
 
-Validate those on-host before relying on them; they were not re-verified over SSH in this pass.
+### GitHub Actions Secrets (configured on `WaiWai-is/wai-agents`)
+
+| Secret/Variable | Purpose |
+|----------------|---------|
+| `DEPLOY_ENABLED` (variable) | Set to `true` to enable deploy job |
+| `SSH_PRIVATE_KEY` | ed25519 key for server access |
+| `SSH_HOST` | `157.180.72.249` |
+| `SSH_USER` | `root` |
+| `SSH_KNOWN_HOSTS` | Server host key fingerprints |
 
 ## Verified Test Account
 
-- `alex@waiagents.com / TestPass123!`
+- `alex@openraccoon.com / TestPass123!`

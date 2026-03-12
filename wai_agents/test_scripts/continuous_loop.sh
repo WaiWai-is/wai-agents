@@ -10,7 +10,7 @@ RUNTIME_DIR="$REPO_ROOT/agent_runtime"
 
 LOOP_HOURS="${LOOP_HOURS:-8}"
 CYCLE_DELAY_SECONDS="${CYCLE_DELAY_SECONDS:-20}"
-BASE_URL="${BASE_URL:-https://waiagents.com/api/v1}"
+BASE_URL="${BASE_URL:-https://openraccoon.com/api/v1}"
 ARTIFACT_ROOT="${ARTIFACT_ROOT:-/tmp/wai_agents_continuous}"
 MAX_CYCLES="${MAX_CYCLES:-0}"
 
@@ -36,7 +36,7 @@ Usage: ./continuous_loop.sh [options]
 
 Core:
   --hours HOURS                   Total run time (default: 8)
-  --base-url URL                  API base URL (default: https://waiagents.com/api/v1)
+  --base-url URL                  API base URL (default: https://openraccoon.com/api/v1)
   --artifact-root DIR             Artifact root directory (default: /tmp/wai_agents_continuous)
   --cycle-delay SECONDS           Delay between cycles (default: 20)
   --max-cycles N                  Stop after N cycles (0 = no cap)

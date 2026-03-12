@@ -10,7 +10,7 @@ source "$SCRIPT_DIR/helpers.sh"
 # Override -e from helpers.sh — we want to continue on failures
 set +e
 
-BASE="${BASE_URL:-https://waiagents.com/api/v1}"
+BASE="${BASE_URL:-https://openraccoon.com/api/v1}"
 
 # --- Load pre-created user tokens ---
 

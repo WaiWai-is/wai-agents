@@ -8,7 +8,7 @@ import Testing
 @Suite("Auth Service Tests")
 struct AuthServiceTests {
 
-    private let baseURL = URL(string: "https://waiagents.com")!
+    private let baseURL = URL(string: "https://openraccoon.com")!
 
     // MARK: - Helpers
 

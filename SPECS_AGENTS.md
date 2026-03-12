@@ -1753,7 +1753,7 @@ settings/
 2. Frontend calls `POST /api/v1/integrations/:service/authorize` → returns `{authorize_url}`
 3. Frontend opens `authorize_url` in a popup window
 4. User authorizes on the service's OAuth page
-5. Service redirects to `https://waiagents.com/api/v1/integrations/callback/:service?code=...&state=...`
+5. Service redirects to `https://openraccoon.com/api/v1/integrations/callback/:service?code=...&state=...`
 6. Backend exchanges code for tokens, encrypts, stores
 7. Popup closes, frontend polls for connection status
 

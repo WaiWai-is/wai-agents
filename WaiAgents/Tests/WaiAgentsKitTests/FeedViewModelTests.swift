@@ -12,7 +12,7 @@ struct FeedViewModelTests {
     @MainActor
     private func makeVM() -> FeedViewModel {
         let authManager = AuthManager(serviceName: "test.feed.comp.\(UUID().uuidString)")
-        let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+        let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
         return FeedViewModel(apiClient: apiClient)
     }
 

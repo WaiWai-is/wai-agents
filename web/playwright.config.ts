@@ -27,8 +27,8 @@ export default defineConfig({
         reuseExistingServer: false,
         env: {
           ...process.env,
-          API_PROXY_TARGET: process.env.API_PROXY_TARGET ?? 'https://waiagents.com',
-          NEXT_PUBLIC_WS_URL: process.env.NEXT_PUBLIC_WS_URL ?? 'https://waiagents.com',
+          API_PROXY_TARGET: process.env.API_PROXY_TARGET ?? 'https://openraccoon.com',
+          NEXT_PUBLIC_WS_URL: process.env.NEXT_PUBLIC_WS_URL ?? 'https://openraccoon.com',
         },
         timeout: 120_000,
       }

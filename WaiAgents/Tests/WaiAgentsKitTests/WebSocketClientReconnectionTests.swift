@@ -222,11 +222,11 @@ struct WebSocketClientReconnectionTests {
 
     @Test("HTTPS base URL converts to WSS")
     func httpsToWss() {
-        let baseURL = "https://waiagents.com"
+        let baseURL = "https://openraccoon.com"
         let wsURL = baseURL
             .replacingOccurrences(of: "https://", with: "wss://")
             .replacingOccurrences(of: "http://", with: "ws://")
-        #expect(wsURL == "wss://waiagents.com")
+        #expect(wsURL == "wss://openraccoon.com")
     }
 
     @Test("HTTP base URL converts to WS")
@@ -240,18 +240,18 @@ struct WebSocketClientReconnectionTests {
 
     @Test("Socket path appends /socket to WebSocket URL")
     func socketPathAppended() {
-        let wsURL = "wss://waiagents.com"
+        let wsURL = "wss://openraccoon.com"
         let fullPath = "\(wsURL)/socket"
-        #expect(fullPath == "wss://waiagents.com/socket")
+        #expect(fullPath == "wss://openraccoon.com/socket")
     }
 
     @Test("Base URL with trailing slash handled in replacement")
     func baseURLWithTrailingSlash() {
-        let baseURL = "https://waiagents.com/"
+        let baseURL = "https://openraccoon.com/"
         let wsURL = baseURL
             .replacingOccurrences(of: "https://", with: "wss://")
             .replacingOccurrences(of: "http://", with: "ws://")
-        #expect(wsURL == "wss://waiagents.com/")
+        #expect(wsURL == "wss://openraccoon.com/")
     }
 
     // MARK: - Channel Event Constants

@@ -5,7 +5,7 @@ import Testing
 @Suite("APIEndpoint")
 struct APIEndpointTests {
 
-    let baseURL = URL(string: "https://waiagents.com")!
+    let baseURL = URL(string: "https://openraccoon.com")!
 
     // MARK: - URL Construction
 

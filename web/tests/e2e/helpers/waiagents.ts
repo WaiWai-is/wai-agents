@@ -2,8 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { type APIRequestContext, expect } from '@playwright/test';
 import { type Channel, Socket } from 'phoenix';
 
-export const API_BASE_URL = process.env.E2E_API_BASE_URL ?? 'https://waiagents.com/api/v1';
-export const WS_URL = normalizeSocketUrl(process.env.E2E_WS_URL ?? 'wss://waiagents.com/socket');
+export const API_BASE_URL = process.env.E2E_API_BASE_URL ?? 'https://openraccoon.com/api/v1';
+export const WS_URL = normalizeSocketUrl(process.env.E2E_WS_URL ?? 'wss://openraccoon.com/socket');
 
 type SeedUser = {
   username: string;
@@ -22,12 +22,12 @@ type AuthSession = {
 const seedUsers: Record<'alex' | 'maya', SeedUser> = {
   alex: {
     username: process.env.E2E_ALEX_USERNAME ?? 'alex_dev',
-    email: process.env.E2E_ALEX_EMAIL ?? 'alex@waiagents.com',
+    email: process.env.E2E_ALEX_EMAIL ?? 'alex@openraccoon.com',
     password: process.env.E2E_ALEX_PASSWORD ?? 'TestPass123!',
   },
   maya: {
     username: process.env.E2E_MAYA_USERNAME ?? 'maya_writer',
-    email: process.env.E2E_MAYA_EMAIL ?? 'maya@waiagents.com',
+    email: process.env.E2E_MAYA_EMAIL ?? 'maya@openraccoon.com',
     password: process.env.E2E_MAYA_PASSWORD ?? 'TestPass123!',
   },
 };

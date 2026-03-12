@@ -8,7 +8,7 @@ import Testing
 @Suite("Conversation ViewModel Tests")
 struct ConversationViewModelTests {
 
-    private let baseURL = URL(string: "https://waiagents.com")!
+    private let baseURL = URL(string: "https://openraccoon.com")!
 
     // MARK: - Helpers
 

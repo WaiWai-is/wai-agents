@@ -72,7 +72,7 @@ if config_env() == :prod do
 
   config :wai_agents_shared, WaiAgentsShared.Mailer, api_key: System.fetch_env!("RESEND_API_KEY")
 
-  config :wai_agents_gateway, :base_url, System.get_env("BASE_URL", "https://waiagents.com")
+  config :wai_agents_gateway, :base_url, System.get_env("BASE_URL", "https://openraccoon.com")
 
   # Hetzner Object Storage (S3-compatible)
   if System.get_env("SPACES_BUCKET") do

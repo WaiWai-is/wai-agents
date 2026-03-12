@@ -16,7 +16,7 @@ struct ConversationViewModelEdgeTests {
         currentUserID: String = "user_edge2"
     ) -> ConversationDetailViewModel {
         let authManager = AuthManager(serviceName: "test.cdvm.edge2.\(UUID().uuidString)")
-        let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+        let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
         return ConversationDetailViewModel(
             conversationID: conversationID,
             apiClient: apiClient,

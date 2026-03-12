@@ -12,7 +12,7 @@ struct FeedViewModelEdgeCaseTests {
     @MainActor
     private func makeVM() -> FeedViewModel {
         let authManager = AuthManager(serviceName: "test.feed.edge.\(UUID().uuidString)")
-        let apiClient = APIClient(baseURL: URL(string: "https://waiagents.com")!, authManager: authManager)
+        let apiClient = APIClient(baseURL: URL(string: "https://openraccoon.com")!, authManager: authManager)
         return FeedViewModel(apiClient: apiClient)
     }
 

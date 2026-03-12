@@ -49,8 +49,8 @@ app.use(
   cors({
     origin:
       process.env.NODE_ENV === 'production'
-        ? ['https://waiagents.com']
-        : ['http://localhost:3000', 'https://waiagents.com'],
+        ? ['https://openraccoon.com']
+        : ['http://localhost:3000', 'https://openraccoon.com'],
     credentials: true,
   }),
 );

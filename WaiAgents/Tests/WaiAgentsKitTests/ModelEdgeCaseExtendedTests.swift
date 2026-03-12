@@ -121,7 +121,7 @@ struct ModelEdgeCaseExtendedTests {
                 description: "A test page",
                 thumbnailURL: URL(string: "https://example.com/thumb.jpg"),
                 r2Path: "pages/page_1/v1",
-                deployURL: URL(string: "https://waiagents.com/p/my-page"),
+                deployURL: URL(string: "https://openraccoon.com/p/my-page"),
                 customDomain: "custom.example.com",
                 version: 3,
                 forkedFrom: "page_0",

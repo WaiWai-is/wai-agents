@@ -12,7 +12,7 @@ import { setupUserHandlers } from './user-channel.js';
 export function createSocketServer(httpServer: HttpServer): SocketIOServer {
   const io = new SocketIOServer(httpServer, {
     cors: {
-      origin: ['http://localhost:3000', 'https://waiagents.com'],
+      origin: ['http://localhost:3000', 'https://openraccoon.com'],
       credentials: true,
     },
     path: '/socket.io',

@@ -13,7 +13,7 @@ describe('toSessionUser', () => {
       id: 'u_123',
       username: 'alex',
       display_name: 'Alex Dev',
-      email: 'alex@waiagents.com',
+      email: 'alex@openraccoon.com',
       avatar_url: 'https://cdn.example.com/avatar.png',
       bio: 'Builder of things',
     };
@@ -24,7 +24,7 @@ describe('toSessionUser', () => {
       id: 'u_123',
       username: 'alex',
       display_name: 'Alex Dev',
-      email: 'alex@waiagents.com',
+      email: 'alex@openraccoon.com',
       avatar_url: 'https://cdn.example.com/avatar.png',
       bio: 'Builder of things',
     });
