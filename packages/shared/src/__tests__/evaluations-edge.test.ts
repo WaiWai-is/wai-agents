@@ -1,23 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import {
-  EvalStartedEventSchema,
-  EvalProgressEventSchema,
-  EvalCompletedEventSchema,
-  EvalFailedEventSchema,
-  type EvalStartedEvent,
-  type EvalProgressEvent,
-  type EvalCompletedEvent,
-  type EvalFailedEvent,
-  type EvalEvent,
-  type EvalSuiteStatus,
-  type EvalRunStatus,
-  type EvalResultVerdict,
   type AgentEvalSuite,
-  type EvalTestCase,
-  type EvalRun,
+  type EvalCompletedEvent,
+  EvalCompletedEventSchema,
+  type EvalEvent,
+  type EvalFailedEvent,
+  EvalFailedEventSchema,
+  type EvalProgressEvent,
+  EvalProgressEventSchema,
   type EvalResult,
+  type EvalResultVerdict,
+  type EvalRun,
+  type EvalRunStatus,
   type EvalRunWithResults,
+  type EvalStartedEvent,
+  EvalStartedEventSchema,
+  type EvalSuiteStatus,
   type EvalSuiteWithTestCases,
+  type EvalTestCase,
   type LeaderboardEntry,
 } from '../types/evaluations.js';
 
@@ -648,13 +648,7 @@ describe('Evaluation types — compile-time shape verification', () => {
   });
 
   it('EvalRunStatus has expected union members', () => {
-    const statuses: EvalRunStatus[] = [
-      'pending',
-      'running',
-      'completed',
-      'failed',
-      'cancelled',
-    ];
+    const statuses: EvalRunStatus[] = ['pending', 'running', 'completed', 'failed', 'cancelled'];
     expect(statuses).toHaveLength(5);
   });
 

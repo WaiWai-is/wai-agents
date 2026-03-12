@@ -86,9 +86,7 @@ describe('knowledge.service (edge2) — createNode', () => {
 
     sqlMock.mockResolvedValueOnce([{ id: AGENT_ID }] as any);
     sqlMock.mockResolvedValueOnce([] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeNodeRow({ description: 'Senior engineer' }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeNodeRow({ description: 'Senior engineer' })] as any);
 
     const { createNode } = await import('./knowledge.service.js');
     const result = await createNode(AGENT_ID, USER_ID, {
@@ -150,9 +148,7 @@ describe('knowledge.service (edge2) — createNode', () => {
 
     sqlMock.mockResolvedValueOnce([{ id: AGENT_ID }] as any);
     sqlMock.mockResolvedValueOnce([] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeNodeRow({ name: specialName }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeNodeRow({ name: specialName })] as any);
 
     const { createNode } = await import('./knowledge.service.js');
     const result = await createNode(AGENT_ID, USER_ID, {
@@ -170,9 +166,7 @@ describe('knowledge.service (edge2) — createNode', () => {
 
     sqlMock.mockResolvedValueOnce([{ id: AGENT_ID }] as any);
     sqlMock.mockResolvedValueOnce([] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeNodeRow({ description: longDesc }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeNodeRow({ description: longDesc })] as any);
 
     const { createNode } = await import('./knowledge.service.js');
     const result = await createNode(AGENT_ID, USER_ID, {
@@ -341,9 +335,7 @@ describe('knowledge.service (edge2) — listNodes search', () => {
     const sqlMock = vi.mocked(sql);
 
     sqlMock.mockResolvedValueOnce([{ id: AGENT_ID }] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeNodeRow({ label: 'Concept' }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeNodeRow({ label: 'Concept' })] as any);
 
     const { listNodes } = await import('./knowledge.service.js');
     const results = await listNodes(AGENT_ID, USER_ID, { label: 'Concept' });
@@ -452,9 +444,7 @@ describe('knowledge.service (edge2) — listNodes search', () => {
     vi.mocked(sql).mockResolvedValueOnce([] as any);
 
     const { listNodes } = await import('./knowledge.service.js');
-    await expect(
-      listNodes(AGENT_ID, OTHER_USER_ID),
-    ).rejects.toMatchObject({
+    await expect(listNodes(AGENT_ID, OTHER_USER_ID)).rejects.toMatchObject({
       code: 'NOT_FOUND',
     });
   });
@@ -488,9 +478,7 @@ describe('knowledge.service (edge2) — listEdges filtering', () => {
     const sqlMock = vi.mocked(sql);
 
     sqlMock.mockResolvedValueOnce([{ id: AGENT_ID }] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeEdgeRow({ relationship: 'works_with' }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeEdgeRow({ relationship: 'works_with' })] as any);
 
     const { listEdges } = await import('./knowledge.service.js');
     const results = await listEdges(AGENT_ID, USER_ID, {
@@ -537,9 +525,7 @@ describe('knowledge.service (edge2) — listEdges filtering', () => {
     vi.mocked(sql).mockResolvedValueOnce([] as any);
 
     const { listEdges } = await import('./knowledge.service.js');
-    await expect(
-      listEdges(AGENT_ID, OTHER_USER_ID),
-    ).rejects.toMatchObject({
+    await expect(listEdges(AGENT_ID, OTHER_USER_ID)).rejects.toMatchObject({
       code: 'NOT_FOUND',
     });
   });
@@ -559,9 +545,7 @@ describe('knowledge.service (edge2) — updateNode additional', () => {
     const sqlMock = vi.mocked(sql);
 
     sqlMock.mockResolvedValueOnce([{ id: NODE_ID }] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeNodeRow({ label: 'Organization' }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeNodeRow({ label: 'Organization' })] as any);
 
     const { updateNode } = await import('./knowledge.service.js');
     const result = await updateNode(NODE_ID, USER_ID, {
@@ -589,9 +573,7 @@ describe('knowledge.service (edge2) — updateNode additional', () => {
     const sqlMock = vi.mocked(sql);
 
     sqlMock.mockResolvedValueOnce([{ id: NODE_ID }] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeNodeRow({ description: null }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeNodeRow({ description: null })] as any);
 
     const { updateNode } = await import('./knowledge.service.js');
     const result = await updateNode(NODE_ID, USER_ID, {
@@ -648,9 +630,7 @@ describe('knowledge.service (edge2) — updateNode additional', () => {
     vi.mocked(sql).mockResolvedValueOnce([] as any);
 
     const { updateNode } = await import('./knowledge.service.js');
-    await expect(
-      updateNode(NODE_ID, OTHER_USER_ID, { name: 'Hack' }),
-    ).rejects.toMatchObject({
+    await expect(updateNode(NODE_ID, OTHER_USER_ID, { name: 'Hack' })).rejects.toMatchObject({
       code: 'NOT_FOUND',
     });
   });
@@ -674,9 +654,7 @@ describe('knowledge.service (edge2) — createEdge additional', () => {
     sqlMock.mockResolvedValueOnce([{ id: NODE_ID }] as any);
     sqlMock.mockResolvedValueOnce([{ id: NODE_ID_2 }] as any);
     sqlMock.mockResolvedValueOnce([] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeEdgeRow({ weight: 0.5, properties: props }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeEdgeRow({ weight: 0.5, properties: props })] as any);
 
     const { createEdge } = await import('./knowledge.service.js');
     const result = await createEdge(AGENT_ID, USER_ID, {
@@ -699,9 +677,7 @@ describe('knowledge.service (edge2) — createEdge additional', () => {
     sqlMock.mockResolvedValueOnce([{ id: NODE_ID }] as any);
     sqlMock.mockResolvedValueOnce([{ id: NODE_ID_2 }] as any);
     sqlMock.mockResolvedValueOnce([] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeEdgeRow({ relationship: 'is-a/subtype_of' }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeEdgeRow({ relationship: 'is-a/subtype_of' })] as any);
 
     const { createEdge } = await import('./knowledge.service.js');
     const result = await createEdge(AGENT_ID, USER_ID, {
@@ -751,9 +727,7 @@ describe('knowledge.service (edge2) — large document handling', () => {
 
     sqlMock.mockResolvedValueOnce([{ id: AGENT_ID }] as any);
     sqlMock.mockResolvedValueOnce([] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeNodeRow({ properties: largeProps }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeNodeRow({ properties: largeProps })] as any);
 
     const { createNode } = await import('./knowledge.service.js');
     const result = await createNode(AGENT_ID, USER_ID, {
@@ -783,9 +757,7 @@ describe('knowledge.service (edge2) — large document handling', () => {
 
     sqlMock.mockResolvedValueOnce([{ id: AGENT_ID }] as any);
     sqlMock.mockResolvedValueOnce([] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeNodeRow({ properties: deepProps }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeNodeRow({ properties: deepProps })] as any);
 
     const { createNode } = await import('./knowledge.service.js');
     const result = await createNode(AGENT_ID, USER_ID, {
@@ -830,9 +802,7 @@ describe('knowledge.service (edge2) — timestamp formatting', () => {
   it('handles null created_at returning null', async () => {
     const { sql } = await import('../../db/connection.js');
     vi.mocked(sql).mockResolvedValueOnce([{ id: NODE_ID }] as any);
-    vi.mocked(sql.unsafe).mockResolvedValueOnce([
-      makeNodeRow({ created_at: null }),
-    ] as any);
+    vi.mocked(sql.unsafe).mockResolvedValueOnce([makeNodeRow({ created_at: null })] as any);
 
     const { getNode } = await import('./knowledge.service.js');
     const node = await getNode(NODE_ID, USER_ID);
@@ -843,9 +813,7 @@ describe('knowledge.service (edge2) — timestamp formatting', () => {
   it('handles null updated_at returning null', async () => {
     const { sql } = await import('../../db/connection.js');
     vi.mocked(sql).mockResolvedValueOnce([{ id: NODE_ID }] as any);
-    vi.mocked(sql.unsafe).mockResolvedValueOnce([
-      makeNodeRow({ updated_at: null }),
-    ] as any);
+    vi.mocked(sql.unsafe).mockResolvedValueOnce([makeNodeRow({ updated_at: null })] as any);
 
     const { getNode } = await import('./knowledge.service.js');
     const node = await getNode(NODE_ID, USER_ID);
@@ -858,9 +826,7 @@ describe('knowledge.service (edge2) — timestamp formatting', () => {
     const sqlMock = vi.mocked(sql);
 
     sqlMock.mockResolvedValueOnce([{ id: AGENT_ID }] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeEdgeRow({ created_at: null }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeEdgeRow({ created_at: null })] as any);
 
     const { listEdges } = await import('./knowledge.service.js');
     const edges = await listEdges(AGENT_ID, USER_ID);

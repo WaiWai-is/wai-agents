@@ -139,9 +139,7 @@ describe('conversation.service (edge2) — createConversation with agent', () =>
 
     sqlMock.mockResolvedValueOnce([] as any);
     sqlMock.mockResolvedValueOnce([] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeConversationRow({ title: longTitle }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeConversationRow({ title: longTitle })] as any);
 
     const { createConversation } = await import('./conversation.service.js');
     const result = await createConversation(USER_ID, {
@@ -160,9 +158,7 @@ describe('conversation.service (edge2) — createConversation with agent', () =>
 
     sqlMock.mockResolvedValueOnce([] as any);
     sqlMock.mockResolvedValueOnce([] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeConversationRow({ title: specialTitle }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeConversationRow({ title: specialTitle })] as any);
 
     const { createConversation } = await import('./conversation.service.js');
     const result = await createConversation(USER_ID, {
@@ -195,8 +191,9 @@ describe('conversation.service (edge2) — createConversation with agent', () =>
     const { sql } = await import('../../db/connection.js');
     const sqlMock = vi.mocked(sql);
 
-    const memberIds = Array.from({ length: 10 }, (_, i) =>
-      `member-${i}-e29b-41d4-a716-446655440000`,
+    const memberIds = Array.from(
+      { length: 10 },
+      (_, i) => `member-${i}-e29b-41d4-a716-446655440000`,
     );
 
     // Insert conversation + Insert creator as owner + 10 member inserts + SELECT
@@ -237,9 +234,7 @@ describe('conversation.service (edge2) — getConversation access control', () =
     vi.mocked(sql).mockResolvedValueOnce([] as any);
 
     const { getConversation } = await import('./conversation.service.js');
-    await expect(
-      getConversation(CONVERSATION_ID, OTHER_USER_ID),
-    ).rejects.toMatchObject({
+    await expect(getConversation(CONVERSATION_ID, OTHER_USER_ID)).rejects.toMatchObject({
       code: 'NOT_FOUND',
       message: 'Conversation not found or access denied',
     });
@@ -253,9 +248,7 @@ describe('conversation.service (edge2) — getConversation access control', () =
     sqlMock.mockResolvedValueOnce([] as any);
 
     const { getConversation } = await import('./conversation.service.js');
-    await expect(
-      getConversation(CONVERSATION_ID, USER_ID),
-    ).rejects.toMatchObject({
+    await expect(getConversation(CONVERSATION_ID, USER_ID)).rejects.toMatchObject({
       code: 'NOT_FOUND',
     });
   });
@@ -265,9 +258,7 @@ describe('conversation.service (edge2) — getConversation access control', () =
     const sqlMock = vi.mocked(sql);
 
     sqlMock.mockResolvedValueOnce([{ id: 'member-id' }] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeConversationRow({ last_message_at: null }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeConversationRow({ last_message_at: null })] as any);
 
     const { getConversation } = await import('./conversation.service.js');
     const result = await getConversation(CONVERSATION_ID, USER_ID);
@@ -402,9 +393,7 @@ describe('conversation.service (edge2) — updateConversation fields', () => {
     const sqlMock = vi.mocked(sql);
 
     sqlMock.mockResolvedValueOnce([{ role: 'owner' }] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeConversationRow({ title: 'New Title' }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeConversationRow({ title: 'New Title' })] as any);
 
     const { updateConversation } = await import('./conversation.service.js');
     const result = await updateConversation(CONVERSATION_ID, USER_ID, {
@@ -693,9 +682,7 @@ describe('conversation.service (edge2) — listMessages pagination', () => {
     const sqlMock = vi.mocked(sql);
 
     sqlMock.mockResolvedValueOnce([{ id: 'member-id' }] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeMessageRow({ edited_at: new Date('2026-03-02') }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeMessageRow({ edited_at: new Date('2026-03-02') })] as any);
 
     const { listMessages } = await import('./conversation.service.js');
     const results = await listMessages(CONVERSATION_ID, USER_ID);
@@ -708,9 +695,7 @@ describe('conversation.service (edge2) — listMessages pagination', () => {
     const sqlMock = vi.mocked(sql);
 
     sqlMock.mockResolvedValueOnce([{ id: 'member-id' }] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeMessageRow({ deleted_at: new Date('2026-03-03') }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeMessageRow({ deleted_at: new Date('2026-03-03') })] as any);
 
     const { listMessages } = await import('./conversation.service.js');
     const results = await listMessages(CONVERSATION_ID, USER_ID);
@@ -772,9 +757,7 @@ describe('conversation.service (edge2) — listMembers', () => {
     vi.mocked(sql).mockResolvedValueOnce([] as any);
 
     const { listMembers } = await import('./conversation.service.js');
-    await expect(
-      listMembers(CONVERSATION_ID, OTHER_USER_ID),
-    ).rejects.toMatchObject({
+    await expect(listMembers(CONVERSATION_ID, OTHER_USER_ID)).rejects.toMatchObject({
       code: 'NOT_FOUND',
     });
   });
@@ -784,9 +767,7 @@ describe('conversation.service (edge2) — listMembers', () => {
     const sqlMock = vi.mocked(sql);
 
     sqlMock.mockResolvedValueOnce([{ id: 'member-id' }] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeMemberRow({ last_read_at: null }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeMemberRow({ last_read_at: null })] as any);
 
     const { listMembers } = await import('./conversation.service.js');
     const results = await listMembers(CONVERSATION_ID, USER_ID);
@@ -812,9 +793,7 @@ describe('conversation.service (edge2) — listMembers', () => {
     const sqlMock = vi.mocked(sql);
 
     sqlMock.mockResolvedValueOnce([{ id: 'member-id' }] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeMemberRow({ username: undefined }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeMemberRow({ username: undefined })] as any);
 
     const { listMembers } = await import('./conversation.service.js');
     const results = await listMembers(CONVERSATION_ID, USER_ID);
@@ -902,9 +881,7 @@ describe('conversation.service (edge2) — deleteConversation', () => {
     vi.mocked(sql).mockResolvedValueOnce([{ role: 'member' }] as any);
 
     const { deleteConversation } = await import('./conversation.service.js');
-    await expect(
-      deleteConversation(CONVERSATION_ID, USER_ID),
-    ).rejects.toMatchObject({
+    await expect(deleteConversation(CONVERSATION_ID, USER_ID)).rejects.toMatchObject({
       code: 'FORBIDDEN',
     });
   });
@@ -917,8 +894,6 @@ describe('conversation.service (edge2) — deleteConversation', () => {
     sqlMock.mockResolvedValueOnce([] as any);
 
     const { deleteConversation } = await import('./conversation.service.js');
-    await expect(
-      deleteConversation(CONVERSATION_ID, USER_ID),
-    ).resolves.toBeUndefined();
+    await expect(deleteConversation(CONVERSATION_ID, USER_ID)).resolves.toBeUndefined();
   });
 });

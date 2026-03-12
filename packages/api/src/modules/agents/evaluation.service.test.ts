@@ -192,9 +192,7 @@ describe('evaluation.service — createSuite', () => {
 
     sqlMock.mockResolvedValueOnce([{ id: AGENT_ID }] as any);
     sqlMock.mockResolvedValueOnce([] as any);
-    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([
-      makeSuiteRow({ description: null }),
-    ] as any);
+    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeSuiteRow({ description: null })] as any);
 
     const { createSuite } = await import('./evaluation.service.js');
     const result = await createSuite(AGENT_ID, USER_ID, { name: 'Minimal Suite' });
@@ -229,9 +227,7 @@ describe('evaluation.service — createSuite', () => {
 
     sqlMock.mockResolvedValueOnce([{ id: AGENT_ID }] as any);
     sqlMock.mockResolvedValueOnce([] as any);
-    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([
-      makeSuiteRow({ metadata: meta }),
-    ] as any);
+    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeSuiteRow({ metadata: meta })] as any);
 
     const { createSuite } = await import('./evaluation.service.js');
     const result = await createSuite(AGENT_ID, USER_ID, {
@@ -247,9 +243,7 @@ describe('evaluation.service — createSuite', () => {
     vi.mocked(sql).mockResolvedValueOnce([] as any);
 
     const { createSuite } = await import('./evaluation.service.js');
-    await expect(
-      createSuite('nonexistent', USER_ID, { name: 'Test' }),
-    ).rejects.toMatchObject({
+    await expect(createSuite('nonexistent', USER_ID, { name: 'Test' })).rejects.toMatchObject({
       code: 'NOT_FOUND',
     });
   });
@@ -261,9 +255,7 @@ describe('evaluation.service — createSuite', () => {
 
     sqlMock.mockResolvedValueOnce([{ id: AGENT_ID }] as any);
     sqlMock.mockResolvedValueOnce([] as any);
-    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([
-      makeSuiteRow({ name: specialName }),
-    ] as any);
+    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeSuiteRow({ name: specialName })] as any);
 
     const { createSuite } = await import('./evaluation.service.js');
     const result = await createSuite(AGENT_ID, USER_ID, { name: specialName });
@@ -365,9 +357,7 @@ describe('evaluation.service — updateSuite', () => {
     const sqlMock = vi.mocked(sql);
 
     sqlMock.mockResolvedValueOnce([{ id: SUITE_ID }] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeSuiteRow({ description: 'New description' }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeSuiteRow({ description: 'New description' })] as any);
 
     const { updateSuite } = await import('./evaluation.service.js');
     const result = await updateSuite(SUITE_ID, USER_ID, {
@@ -396,9 +386,7 @@ describe('evaluation.service — updateSuite', () => {
     const newRubric = { accuracy: 1.0 };
 
     sqlMock.mockResolvedValueOnce([{ id: SUITE_ID }] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeSuiteRow({ scoring_rubric: newRubric }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeSuiteRow({ scoring_rubric: newRubric })] as any);
 
     const { updateSuite } = await import('./evaluation.service.js');
     const result = await updateSuite(SUITE_ID, USER_ID, {
@@ -413,9 +401,7 @@ describe('evaluation.service — updateSuite', () => {
     const sqlMock = vi.mocked(sql);
 
     sqlMock.mockResolvedValueOnce([{ id: SUITE_ID }] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeSuiteRow({ metadata: { updated: true } }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeSuiteRow({ metadata: { updated: true } })] as any);
 
     const { updateSuite } = await import('./evaluation.service.js');
     const result = await updateSuite(SUITE_ID, USER_ID, {
@@ -443,9 +429,7 @@ describe('evaluation.service — updateSuite', () => {
     vi.mocked(sql).mockResolvedValueOnce([] as any);
 
     const { updateSuite } = await import('./evaluation.service.js');
-    await expect(
-      updateSuite('nonexistent', USER_ID, { name: 'Test' }),
-    ).rejects.toMatchObject({
+    await expect(updateSuite('nonexistent', USER_ID, { name: 'Test' })).rejects.toMatchObject({
       code: 'NOT_FOUND',
     });
   });
@@ -458,9 +442,7 @@ describe('evaluation.service — updateSuite', () => {
     sqlMock.mockResolvedValueOnce([] as any);
 
     const { updateSuite } = await import('./evaluation.service.js');
-    await expect(
-      updateSuite(SUITE_ID, USER_ID, { name: 'Test' }),
-    ).rejects.toMatchObject({
+    await expect(updateSuite(SUITE_ID, USER_ID, { name: 'Test' })).rejects.toMatchObject({
       code: 'NOT_FOUND',
     });
   });
@@ -612,9 +594,7 @@ describe('evaluation.service — createTestCase', () => {
 
     sqlMock.mockResolvedValueOnce([{ id: SUITE_ID }] as any);
     sqlMock.mockResolvedValueOnce([] as any);
-    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([
-      makeTestCaseRow({ weight: 2.5 }),
-    ] as any);
+    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeTestCaseRow({ weight: 2.5 })] as any);
 
     const { createTestCase } = await import('./evaluation.service.js');
     const result = await createTestCase(SUITE_ID, USER_ID, {
@@ -633,9 +613,7 @@ describe('evaluation.service — createTestCase', () => {
 
     sqlMock.mockResolvedValueOnce([{ id: SUITE_ID }] as any);
     sqlMock.mockResolvedValueOnce([] as any);
-    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([
-      makeTestCaseRow({ tags }),
-    ] as any);
+    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeTestCaseRow({ tags })] as any);
 
     const { createTestCase } = await import('./evaluation.service.js');
     const result = await createTestCase(SUITE_ID, USER_ID, {
@@ -654,9 +632,7 @@ describe('evaluation.service — createTestCase', () => {
 
     sqlMock.mockResolvedValueOnce([{ id: SUITE_ID }] as any);
     sqlMock.mockResolvedValueOnce([] as any);
-    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([
-      makeTestCaseRow({ metadata: meta }),
-    ] as any);
+    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeTestCaseRow({ metadata: meta })] as any);
 
     const { createTestCase } = await import('./evaluation.service.js');
     const result = await createTestCase(SUITE_ID, USER_ID, {
@@ -674,9 +650,7 @@ describe('evaluation.service — createTestCase', () => {
 
     sqlMock.mockResolvedValueOnce([{ id: SUITE_ID }] as any);
     sqlMock.mockResolvedValueOnce([] as any);
-    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([
-      makeTestCaseRow({ weight: 1.0 }),
-    ] as any);
+    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeTestCaseRow({ weight: 1.0 })] as any);
 
     const { createTestCase } = await import('./evaluation.service.js');
     const result = await createTestCase(SUITE_ID, USER_ID, {
@@ -751,9 +725,7 @@ describe('evaluation.service — updateTestCase', () => {
     const newExpected = { response: 'expected answer' };
 
     sqlMock.mockResolvedValueOnce([{ suite_id: SUITE_ID }] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeTestCaseRow({ expected_output: newExpected }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeTestCaseRow({ expected_output: newExpected })] as any);
 
     const { updateTestCase } = await import('./evaluation.service.js');
     const result = await updateTestCase(TEST_CASE_ID, USER_ID, {
@@ -768,9 +740,7 @@ describe('evaluation.service — updateTestCase', () => {
     const sqlMock = vi.mocked(sql);
 
     sqlMock.mockResolvedValueOnce([{ suite_id: SUITE_ID }] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeTestCaseRow({ expected_output: null }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeTestCaseRow({ expected_output: null })] as any);
 
     const { updateTestCase } = await import('./evaluation.service.js');
     const result = await updateTestCase(TEST_CASE_ID, USER_ID, {
@@ -798,9 +768,7 @@ describe('evaluation.service — updateTestCase', () => {
     const sqlMock = vi.mocked(sql);
 
     sqlMock.mockResolvedValueOnce([{ suite_id: SUITE_ID }] as any);
-    sqlMock.mockResolvedValueOnce([
-      makeTestCaseRow({ tags: ['new-tag-1', 'new-tag-2'] }),
-    ] as any);
+    sqlMock.mockResolvedValueOnce([makeTestCaseRow({ tags: ['new-tag-1', 'new-tag-2'] })] as any);
 
     const { updateTestCase } = await import('./evaluation.service.js');
     const result = await updateTestCase(TEST_CASE_ID, USER_ID, {
@@ -815,9 +783,7 @@ describe('evaluation.service — updateTestCase', () => {
     vi.mocked(sql).mockResolvedValueOnce([] as any);
 
     const { updateTestCase } = await import('./evaluation.service.js');
-    await expect(
-      updateTestCase('nonexistent', USER_ID, { name: 'test' }),
-    ).rejects.toMatchObject({
+    await expect(updateTestCase('nonexistent', USER_ID, { name: 'test' })).rejects.toMatchObject({
       code: 'NOT_FOUND',
     });
   });
@@ -830,9 +796,7 @@ describe('evaluation.service — updateTestCase', () => {
     sqlMock.mockResolvedValueOnce([] as any);
 
     const { updateTestCase } = await import('./evaluation.service.js');
-    await expect(
-      updateTestCase(TEST_CASE_ID, USER_ID, { name: 'test' }),
-    ).rejects.toMatchObject({
+    await expect(updateTestCase(TEST_CASE_ID, USER_ID, { name: 'test' })).rejects.toMatchObject({
       code: 'NOT_FOUND',
     });
   });
@@ -873,9 +837,7 @@ describe('evaluation.service — deleteTestCase', () => {
     vi.mocked(sql).mockResolvedValueOnce([] as any);
 
     const { deleteTestCase } = await import('./evaluation.service.js');
-    await expect(
-      deleteTestCase(TEST_CASE_ID, OTHER_USER_ID),
-    ).rejects.toMatchObject({
+    await expect(deleteTestCase(TEST_CASE_ID, OTHER_USER_ID)).rejects.toMatchObject({
       code: 'NOT_FOUND',
     });
   });
@@ -923,9 +885,7 @@ describe('evaluation.service — runEvaluation', () => {
     vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([] as any);
 
     const { runEvaluation } = await import('./evaluation.service.js');
-    await expect(
-      runEvaluation(SUITE_ID, AGENT_ID, USER_ID, {}),
-    ).rejects.toMatchObject({
+    await expect(runEvaluation(SUITE_ID, AGENT_ID, USER_ID, {})).rejects.toMatchObject({
       code: 'BAD_REQUEST',
     });
   });
@@ -935,9 +895,7 @@ describe('evaluation.service — runEvaluation', () => {
     vi.mocked(sql).mockResolvedValueOnce([] as any);
 
     const { runEvaluation } = await import('./evaluation.service.js');
-    await expect(
-      runEvaluation(SUITE_ID, AGENT_ID, OTHER_USER_ID, {}),
-    ).rejects.toMatchObject({
+    await expect(runEvaluation(SUITE_ID, AGENT_ID, OTHER_USER_ID, {})).rejects.toMatchObject({
       code: 'NOT_FOUND',
     });
   });
@@ -950,9 +908,7 @@ describe('evaluation.service — runEvaluation', () => {
     sqlMock.mockResolvedValueOnce([] as any);
 
     const { runEvaluation } = await import('./evaluation.service.js');
-    await expect(
-      runEvaluation(SUITE_ID, AGENT_ID, USER_ID, {}),
-    ).rejects.toMatchObject({
+    await expect(runEvaluation(SUITE_ID, AGENT_ID, USER_ID, {})).rejects.toMatchObject({
       code: 'NOT_FOUND',
     });
   });
@@ -966,9 +922,7 @@ describe('evaluation.service — runEvaluation', () => {
     sqlMock.mockResolvedValueOnce([{ id: AGENT_ID }] as any);
     vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeTestCaseRow()] as any);
     sqlMock.mockResolvedValueOnce([] as any);
-    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([
-      makeRunRow({ metadata: runMeta }),
-    ] as any);
+    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeRunRow({ metadata: runMeta })] as any);
 
     const { runEvaluation } = await import('./evaluation.service.js');
     const result = await runEvaluation(SUITE_ID, AGENT_ID, USER_ID, {
@@ -989,9 +943,7 @@ describe('evaluation.service — runEvaluation', () => {
       makeTestCaseRow({ id: TEST_CASE_ID_2, name: 'TC 2' }),
     ] as any);
     sqlMock.mockResolvedValueOnce([] as any);
-    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([
-      makeRunRow({ total_test_cases: 2 }),
-    ] as any);
+    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeRunRow({ total_test_cases: 2 })] as any);
 
     const { runEvaluation } = await import('./evaluation.service.js');
     const result = await runEvaluation(SUITE_ID, AGENT_ID, USER_ID, {});
@@ -1161,8 +1113,8 @@ describe('evaluation.service — getLeaderboard', () => {
         agent_name: 'Agent Beta',
         suite_id: SUITE_ID_2,
         suite_name: 'Suite B',
-        best_score: 0.80,
-        avg_score: 0.70,
+        best_score: 0.8,
+        avg_score: 0.7,
         total_runs: 3,
         last_run_at: NOW,
       },
@@ -1174,7 +1126,7 @@ describe('evaluation.service — getLeaderboard', () => {
     expect(results).toHaveLength(2);
     expect(results[0].best_score).toBe(0.95);
     expect(results[0].agent_name).toBe('Agent Alpha');
-    expect(results[1].best_score).toBe(0.80);
+    expect(results[1].best_score).toBe(0.8);
     expect(results[1].agent_name).toBe('Agent Beta');
   });
 
@@ -1271,9 +1223,7 @@ describe('evaluation.service — formatSuite edge cases', () => {
     const sqlMock = vi.mocked(sql);
 
     sqlMock.mockResolvedValueOnce([{ id: SUITE_ID }] as any);
-    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([
-      makeSuiteRow({ description: null }),
-    ] as any);
+    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeSuiteRow({ description: null })] as any);
     vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([] as any);
 
     const { getSuite } = await import('./evaluation.service.js');
@@ -1303,9 +1253,7 @@ describe('evaluation.service — formatSuite edge cases', () => {
     const sqlMock = vi.mocked(sql);
 
     sqlMock.mockResolvedValueOnce([{ id: SUITE_ID }] as any);
-    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([
-      makeSuiteRow({ metadata: undefined }),
-    ] as any);
+    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeSuiteRow({ metadata: undefined })] as any);
     vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([] as any);
 
     const { getSuite } = await import('./evaluation.service.js');
@@ -1325,9 +1273,7 @@ describe('evaluation.service — formatTestCase edge cases', () => {
     const sqlMock = vi.mocked(sql);
 
     sqlMock.mockResolvedValueOnce([{ id: SUITE_ID }] as any);
-    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([
-      makeTestCaseRow({ input: undefined }),
-    ] as any);
+    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeTestCaseRow({ input: undefined })] as any);
 
     const { listTestCases } = await import('./evaluation.service.js');
     const results = await listTestCases(SUITE_ID, USER_ID);
@@ -1370,9 +1316,7 @@ describe('evaluation.service — formatTestCase edge cases', () => {
     const sqlMock = vi.mocked(sql);
 
     sqlMock.mockResolvedValueOnce([{ id: SUITE_ID }] as any);
-    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([
-      makeTestCaseRow({ tags: undefined }),
-    ] as any);
+    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeTestCaseRow({ tags: undefined })] as any);
 
     const { listTestCases } = await import('./evaluation.service.js');
     const results = await listTestCases(SUITE_ID, USER_ID);
@@ -1406,9 +1350,7 @@ describe('evaluation.service — formatRun edge cases', () => {
     const sqlMock = vi.mocked(sql);
 
     sqlMock.mockResolvedValueOnce([{ id: SUITE_ID }] as any);
-    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([
-      makeRunRow({ overall_score: null }),
-    ] as any);
+    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeRunRow({ overall_score: null })] as any);
 
     const { listRuns } = await import('./evaluation.service.js');
     const results = await listRuns(SUITE_ID, USER_ID);
@@ -1475,9 +1417,7 @@ describe('evaluation.service — formatResult edge cases', () => {
 
     vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeRunRow()] as any);
     sqlMock.mockResolvedValueOnce([{ id: SUITE_ID }] as any);
-    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([
-      makeResultRow({ score: null }),
-    ] as any);
+    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeResultRow({ score: null })] as any);
 
     const { getRun } = await import('./evaluation.service.js');
     const result = await getRun(RUN_ID, USER_ID);
@@ -1491,9 +1431,7 @@ describe('evaluation.service — formatResult edge cases', () => {
 
     vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeRunRow()] as any);
     sqlMock.mockResolvedValueOnce([{ id: SUITE_ID }] as any);
-    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([
-      makeResultRow({ passed: null }),
-    ] as any);
+    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeResultRow({ passed: null })] as any);
 
     const { getRun } = await import('./evaluation.service.js');
     const result = await getRun(RUN_ID, USER_ID);
@@ -1528,9 +1466,7 @@ describe('evaluation.service — formatResult edge cases', () => {
 
     vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeRunRow()] as any);
     sqlMock.mockResolvedValueOnce([{ id: SUITE_ID }] as any);
-    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([
-      makeResultRow({ token_usage: null }),
-    ] as any);
+    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeResultRow({ token_usage: null })] as any);
 
     const { getRun } = await import('./evaluation.service.js');
     const result = await getRun(RUN_ID, USER_ID);
