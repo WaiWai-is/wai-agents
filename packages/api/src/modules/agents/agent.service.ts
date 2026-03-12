@@ -182,7 +182,9 @@ export async function getAgent(agentId: string, userId: string) {
     throw Object.assign(new Error('Agent not found'), { code: 'NOT_FOUND' });
   }
 
-  const agent = formatAgent(rows[0] as Record<string, unknown>);
+  const row = rows[0] as Record<string, unknown>;
+  const agent = formatAgent(row);
+  const isOwner = row.creator_id === userId;
 
   const memRows = await sql`
     SELECT id, agent_id, block_label, content, inserted_at, updated_at
@@ -190,10 +192,18 @@ export async function getAgent(agentId: string, userId: string) {
     ORDER BY inserted_at ASC
   `;
 
-  return {
+  const result = {
     ...agent,
     core_memories: memRows.map((r) => formatCoreMemory(r as Record<string, unknown>)),
   };
+
+  // Strip system_prompt from non-owners — it's proprietary content
+  if (!isOwner) {
+    const { system_prompt: _, ...withoutPrompt } = result;
+    return withoutPrompt;
+  }
+
+  return result;
 }
 
 export async function updateAgent(agentId: string, userId: string, updates: UpdateAgentInput) {

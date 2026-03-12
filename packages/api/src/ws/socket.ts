@@ -2,6 +2,7 @@ import type { Server as HttpServer } from 'node:http';
 import { jwtVerify } from 'jose';
 import { Server as SocketIOServer } from 'socket.io';
 import { JWT_SECRET_STRING } from '../modules/auth/auth.service.js';
+import { isTokenBlacklisted } from '../modules/auth/token-blacklist.js';
 import { setupAgentHandlers } from './agent-channel.js';
 import { setupConversationHandlers } from './conversation-channel.js';
 import { setIO } from './emitter.js';
@@ -26,7 +27,13 @@ export function createSocketServer(httpServer: HttpServer): SocketIOServer {
     }
 
     try {
+      if (isTokenBlacklisted(token)) {
+        return next(new Error('Token has been revoked'));
+      }
       const { payload } = await jwtVerify(token, jwtSecret);
+      if (payload.type === 'refresh') {
+        return next(new Error('Refresh tokens cannot be used for WebSocket auth'));
+      }
       const userId = payload.sub as string;
       if (!userId) {
         return next(new Error('Invalid token: missing subject'));

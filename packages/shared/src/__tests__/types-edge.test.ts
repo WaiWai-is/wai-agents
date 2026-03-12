@@ -280,7 +280,7 @@ describe('CollaborationStatusSchema', () => {
   });
 
   it('rejects invalid status', () => {
-    const result = CollaborationStatusSchema.safeParse('cancelled');
+    const result = CollaborationStatusSchema.safeParse('nonexistent_status');
     expect(result.success).toBe(false);
   });
 });
@@ -293,6 +293,7 @@ describe('CollaborationRequestedEventSchema', () => {
       requester_agent_id: 'agent-1',
       responder_agent_id: 'agent-2',
       task_description: 'Help me with this',
+      priority: 'normal',
     };
     expect(CollaborationRequestedEventSchema.parse(data)).toEqual(data);
   });

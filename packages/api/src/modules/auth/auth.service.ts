@@ -5,6 +5,7 @@ import { jwtVerify, SignJWT } from 'jose';
 import { sql } from '../../db/connection.js';
 import { toISO } from '../../lib/utils.js';
 import type { LoginInput, RegisterInput } from './auth.schema.js';
+import { blacklistToken, isTokenBlacklisted } from './token-blacklist.js';
 
 const scryptAsync = promisify(scrypt);
 
@@ -65,6 +66,9 @@ export async function generateTokens(
 }
 
 export async function verifyAccessToken(token: string): Promise<{ sub: string; role: string }> {
+  if (isTokenBlacklisted(token)) {
+    throw new Error('Token has been revoked');
+  }
   const { payload } = await jwtVerify(token, JWT_SECRET);
   if (!payload.sub || typeof payload.role !== 'string') {
     throw new Error('Invalid access token payload');
@@ -186,8 +190,16 @@ export async function refreshTokens(
   return generateTokens(row.id as string, row.role as string);
 }
 
-export async function logout(_userId: string): Promise<void> {
-  // Stateless JWT — no server-side invalidation needed
+export async function logout(_userId: string, token: string): Promise<void> {
+  // Blacklist the access token for its remaining lifetime (max 15 minutes)
+  const { payload } = await jwtVerify(token, JWT_SECRET);
+  const exp = payload.exp;
+  if (exp) {
+    const remainingMs = exp * 1000 - Date.now();
+    if (remainingMs > 0) {
+      blacklistToken(token, remainingMs);
+    }
+  }
 }
 
 export async function createMagicLink(email: string): Promise<{ token: string }> {

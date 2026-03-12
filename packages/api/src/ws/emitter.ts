@@ -1,4 +1,10 @@
-import type { AgentEvent, CrewEvent, EvalEvent, WorkflowEvent } from '@wai-agents/shared';
+import type {
+  AgentEvent,
+  CollaborationEvent,
+  CrewEvent,
+  EvalEvent,
+  WorkflowEvent,
+} from '@wai-agents/shared';
 import type { Server as SocketIOServer } from 'socket.io';
 
 let io: SocketIOServer | null = null;
@@ -73,7 +79,7 @@ export function emitWorkflowEvent(userId: string, event: WorkflowEvent): void {
   io.to(`user:${userId}`).emit('workflow:event', event);
 }
 
-export function emitCollaborationEvent(userId: string, event: unknown): void {
+export function emitCollaborationEvent(userId: string, event: CollaborationEvent): void {
   if (!io) throw new Error('Socket.IO not initialized');
   io.to(`user:${userId}`).emit('collaboration:event', event);
 }

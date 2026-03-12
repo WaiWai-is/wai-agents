@@ -76,7 +76,12 @@ authRoutes.post('/refresh', async (c) => {
 
 authRoutes.delete('/logout', authMiddleware, async (c) => {
   const userId = c.get('userId');
-  await logout(userId);
+  const authHeader = c.req.header('Authorization');
+  if (!authHeader) {
+    return c.json({ error: 'Unauthorized', message: 'Missing Authorization header' }, 401);
+  }
+  const token = authHeader.slice(7);
+  await logout(userId, token);
   return c.json({ message: 'Logged out successfully' }, 200);
 });
 

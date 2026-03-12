@@ -1,0 +1,36 @@
+// Re-export all collaboration types from the canonical module
+export type {
+  AgentAvailabilityStatus,
+  AgentCapability,
+  AgentCollaboration,
+  CollaborationAcceptedEvent,
+  CollaborationCompletedEvent,
+  CollaborationEvent,
+  CollaborationFailedEvent,
+  CollaborationMessage,
+  CollaborationMessageType,
+  CollaborationPriority,
+  CollaborationProgressEvent,
+  CollaborationRejectedEvent,
+  CollaborationRequestedEvent,
+  CollaborationStatus,
+  CompleteCollaborationPayload,
+  CreateCollaborationPayload,
+  ListCollaborationsQuery,
+  RegisterCapabilitiesPayload,
+  RejectCollaborationPayload,
+  UpdateCollaborationProgressPayload,
+} from './agent-collaborations.js';
+
+export {
+  AgentAvailabilityStatusSchema,
+  CollaborationAcceptedEventSchema,
+  CollaborationCompletedEventSchema,
+  CollaborationFailedEventSchema,
+  CollaborationMessageTypeSchema,
+  CollaborationPrioritySchema,
+  CollaborationProgressEventSchema,
+  CollaborationRejectedEventSchema,
+  CollaborationRequestedEventSchema,
+  CollaborationStatusSchema,
+} from './agent-collaborations.js';

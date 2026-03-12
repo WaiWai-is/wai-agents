@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { authRoutes } from './auth.routes.js';
 import { generateTokens } from './auth.service.js';
 import { createRateLimiter } from './rate-limiter.js';
+import { clearBlacklist } from './token-blacklist.js';
 import { userRoutes } from './user.routes.js';
 
 // Mock DB connection
@@ -53,6 +54,7 @@ let app: ReturnType<typeof buildApp>;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  clearBlacklist();
   app = buildApp();
 });
 

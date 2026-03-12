@@ -29,16 +29,27 @@ describe('emitter — collaboration event', () => {
   });
 
   it('throws before setIO is called', () => {
-    expect(() => emitCollaborationEvent('user-1', { type: 'test' })).toThrow(
-      'Socket.IO not initialized',
-    );
+    expect(() =>
+      emitCollaborationEvent('user-1', {
+        type: 'collaboration:requested',
+        collaboration_id: 'c-1',
+        requester_agent_id: 'a-1',
+        responder_agent_id: 'a-2',
+        task_description: 'test task',
+        priority: 'normal',
+      }),
+    ).toThrow('Socket.IO not initialized');
   });
 
   it('emits collaboration:event to user room', () => {
     const mock = createMockIO();
     setIO(mock.io);
 
-    const event = { type: 'invitation_received', from: 'user-2' };
+    const event = {
+      type: 'collaboration:accepted' as const,
+      collaboration_id: 'c-1',
+      responder_agent_id: 'a-2',
+    };
     emitCollaborationEvent('user-1', event);
 
     expect(mock.toFn).toHaveBeenCalledWith('user:user-1');

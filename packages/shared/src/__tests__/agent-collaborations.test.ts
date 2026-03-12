@@ -51,6 +51,7 @@ describe('CollaborationRequestedEventSchema', () => {
       requester_agent_id: 'agent-1',
       responder_agent_id: 'agent-2',
       task_description: 'Please analyze this data',
+      priority: 'normal',
     };
     expect(CollaborationRequestedEventSchema.parse(data)).toEqual(data);
   });

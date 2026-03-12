@@ -63,9 +63,11 @@ describe('collaboration.service — requestCollaboration', () => {
     sqlMock.mockResolvedValueOnce([{ id: CONVERSATION_ID }] as any);
     // 4. INSERT collaboration
     sqlMock.mockResolvedValueOnce([] as any);
-    // 5. SELECT created collaboration (via sql.unsafe)
+    // 5. INSERT collaboration message
+    sqlMock.mockResolvedValueOnce([] as any);
+    // 6. SELECT created collaboration (via sql.unsafe)
     vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeCollabRow()] as any);
-    // 6. getAgentCreatorId for responder (Socket.IO event)
+    // 7. getAgentCreatorId for responder (Socket.IO event)
     sqlMock.mockResolvedValueOnce([{ creator_id: OTHER_USER_ID }] as any);
 
     const { requestCollaboration } = await import('./collaboration.service.js');
@@ -156,14 +158,15 @@ describe('collaboration.service — requestCollaboration', () => {
     const { sql } = await import('../../db/connection.js');
     const sqlMock = vi.mocked(sql);
 
-    sqlMock.mockResolvedValueOnce([{ id: REQUESTER_AGENT_ID }] as any);
-    sqlMock.mockResolvedValueOnce([{ id: RESPONDER_AGENT_ID }] as any);
-    sqlMock.mockResolvedValueOnce([{ id: CONVERSATION_ID }] as any);
-    sqlMock.mockResolvedValueOnce([] as any);
+    sqlMock.mockResolvedValueOnce([{ id: REQUESTER_AGENT_ID }] as any); // assertAgentCreator
+    sqlMock.mockResolvedValueOnce([{ id: RESPONDER_AGENT_ID }] as any); // responder exists
+    sqlMock.mockResolvedValueOnce([{ id: CONVERSATION_ID }] as any); // conversation exists
+    sqlMock.mockResolvedValueOnce([] as any); // INSERT collab
+    sqlMock.mockResolvedValueOnce([] as any); // INSERT message
     vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([
       makeCollabRow({ metadata: { priority: 'high' } }),
-    ] as any);
-    sqlMock.mockResolvedValueOnce([{ creator_id: OTHER_USER_ID }] as any);
+    ] as any); // SELECT collab
+    sqlMock.mockResolvedValueOnce([{ creator_id: OTHER_USER_ID }] as any); // getAgentCreatorId
 
     const { requestCollaboration } = await import('./collaboration.service.js');
     const result = await requestCollaboration(REQUESTER_AGENT_ID, USER_ID, CONVERSATION_ID, {
@@ -180,12 +183,13 @@ describe('collaboration.service — requestCollaboration', () => {
     const { sql } = await import('../../db/connection.js');
     const sqlMock = vi.mocked(sql);
 
-    sqlMock.mockResolvedValueOnce([{ id: REQUESTER_AGENT_ID }] as any);
-    sqlMock.mockResolvedValueOnce([{ id: RESPONDER_AGENT_ID }] as any);
-    sqlMock.mockResolvedValueOnce([{ id: CONVERSATION_ID }] as any);
-    sqlMock.mockResolvedValueOnce([] as any);
-    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeCollabRow()] as any);
-    sqlMock.mockResolvedValueOnce([{ creator_id: OTHER_USER_ID }] as any);
+    sqlMock.mockResolvedValueOnce([{ id: REQUESTER_AGENT_ID }] as any); // assertAgentCreator
+    sqlMock.mockResolvedValueOnce([{ id: RESPONDER_AGENT_ID }] as any); // responder exists
+    sqlMock.mockResolvedValueOnce([{ id: CONVERSATION_ID }] as any); // conversation exists
+    sqlMock.mockResolvedValueOnce([] as any); // INSERT collab
+    sqlMock.mockResolvedValueOnce([] as any); // INSERT message
+    vi.mocked(sqlMock.unsafe).mockResolvedValueOnce([makeCollabRow()] as any); // SELECT collab
+    sqlMock.mockResolvedValueOnce([{ creator_id: OTHER_USER_ID }] as any); // getAgentCreatorId
 
     const { requestCollaboration } = await import('./collaboration.service.js');
     await requestCollaboration(REQUESTER_AGENT_ID, USER_ID, CONVERSATION_ID, {
@@ -201,6 +205,7 @@ describe('collaboration.service — requestCollaboration', () => {
       requester_agent_id: REQUESTER_AGENT_ID,
       responder_agent_id: RESPONDER_AGENT_ID,
       task_description: 'Analyze this dataset',
+      priority: 'normal',
     });
   });
 });

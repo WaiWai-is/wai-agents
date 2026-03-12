@@ -10,6 +10,7 @@ import {
   verifyPassword,
   verifyRefreshToken,
 } from './auth.service.js';
+import { clearBlacklist } from './token-blacklist.js';
 
 // Mock DB connection to avoid needing a real database in unit tests
 vi.mock('../../db/connection.js', () => ({
@@ -264,24 +265,34 @@ describe('auth.service — password validation edge cases', () => {
  * Session Cleanup After Logout
  * ================================================================ */
 describe('auth.service — logout behavior', () => {
-  it('logout does not throw', async () => {
+  beforeEach(() => {
+    clearBlacklist();
+  });
+
+  it('logout does not throw with valid token', async () => {
+    const { access_token } = await generateTokens('user-1', 'user');
     const { logout } = await import('./auth.service.js');
-    await expect(logout('user-1')).resolves.toBeUndefined();
+    await expect(logout('user-1', access_token)).resolves.toBeUndefined();
   });
 
   it('logout returns void', async () => {
+    const { access_token } = await generateTokens('user-1', 'user');
     const { logout } = await import('./auth.service.js');
-    const result = await logout('user-1');
+    const result = await logout('user-1', access_token);
     expect(result).toBeUndefined();
   });
 
-  it('tokens remain technically valid after logout (stateless JWT)', async () => {
+  it('logout blacklists the token so it cannot be reused', async () => {
     const { access_token } = await generateTokens('user-1', 'user');
     const { logout } = await import('./auth.service.js');
-    await logout('user-1');
-    // Stateless JWT: token is still valid after logout
-    const payload = await verifyAccessToken(access_token);
-    expect(payload.sub).toBe('user-1');
+    await logout('user-1', access_token);
+    // Token should now be revoked
+    await expect(verifyAccessToken(access_token)).rejects.toThrow('Token has been revoked');
+  });
+
+  it('logout with invalid token throws JWS error', async () => {
+    const { logout } = await import('./auth.service.js');
+    await expect(logout('user-1', 'fake-token')).rejects.toThrow();
   });
 });
 
