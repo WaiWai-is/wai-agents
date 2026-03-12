@@ -99,9 +99,9 @@ describe('conversation.service-edge2 — sendMessage content edge cases', () => 
     const sqlMock = vi.mocked(sql);
 
     const content = [
-      { type: 'text', text: 'Part 1' },
-      { type: 'text', text: 'Part 2' },
-      { type: 'text', text: 'Part 3' },
+      { type: 'text' as const, text: 'Part 1' },
+      { type: 'text' as const, text: 'Part 2' },
+      { type: 'text' as const, text: 'Part 3' },
     ];
     sqlMock.mockResolvedValueOnce([{ id: 'member-1' }] as any);
     sqlMock.mockResolvedValueOnce([] as any);
@@ -472,7 +472,9 @@ describe('conversation.service-edge2 — member management advanced', () => {
     vi.mocked(sql).mockResolvedValueOnce([{ role: 'member' }] as any);
 
     const { addMember } = await import('./conversation.service.js');
-    await expect(addMember(CONV_ID, USER_ID, { user_id: 'new-user' })).rejects.toMatchObject({
+    await expect(
+      addMember(CONV_ID, USER_ID, { user_id: 'new-user', role: 'member' }),
+    ).rejects.toMatchObject({
       code: 'FORBIDDEN',
     });
   });

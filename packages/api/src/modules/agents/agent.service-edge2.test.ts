@@ -503,7 +503,7 @@ describe('agent.service-edge2 — templates', () => {
     sqlMock.mockResolvedValueOnce([] as any);
     sqlMock.mockResolvedValueOnce([] as any);
     sqlMock.mockResolvedValueOnce([
-      makeAgentRow({ model: 'custom-model', system_prompt: 'Custom override' }),
+      makeAgentRow({ model: 'gpt-4o', system_prompt: 'Custom override' }),
     ] as any);
     sqlMock.mockResolvedValueOnce([] as any);
 
@@ -511,11 +511,11 @@ describe('agent.service-edge2 — templates', () => {
     const result = await createAgent(USER_ID, {
       name: 'Override Agent',
       template: 'pr_manager',
-      model: 'custom-model',
+      model: 'gpt-4o',
       system_prompt: 'Custom override',
     });
 
-    expect(result.model).toBe('custom-model');
+    expect(result.model).toBe('gpt-4o');
     expect(result.system_prompt).toBe('Custom override');
   });
 });
