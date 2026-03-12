@@ -94,8 +94,8 @@ public actor AuthManager {
     }
 
     public func validAccessToken() async throws -> String {
-        // Return immediately if access token is still valid
-        if let token = accessToken, let expiry = tokenExpiry, expiry > Date() {
+        // Return immediately if access token is still valid (with 60-second buffer for preemptive refresh)
+        if let token = accessToken, let expiry = tokenExpiry, expiry > Date().addingTimeInterval(60) {
             return token
         }
 

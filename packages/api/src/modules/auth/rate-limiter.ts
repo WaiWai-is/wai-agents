@@ -24,10 +24,11 @@ export function createRateLimiter(maxRequests: number, windowMs: number): Middle
   }
 
   return async (c, next) => {
-    const ip =
-      c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ||
-      c.req.header('x-real-ip') ||
-      'unknown';
+    // Use the rightmost x-forwarded-for IP (set by the most trusted proxy)
+    // to prevent IP spoofing via the leftmost client-controlled value.
+    const forwardedFor = c.req.header('x-forwarded-for');
+    const forwardedIp = forwardedFor ? forwardedFor.split(',').at(-1)?.trim() : undefined;
+    const ip = forwardedIp || c.req.header('x-real-ip') || 'unknown';
 
     const now = Date.now();
     const entry = store.get(ip);

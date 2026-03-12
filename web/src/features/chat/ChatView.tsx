@@ -333,6 +333,7 @@ export function ChatView({
 
     return () => {
       clearInterval(checkConnected);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       unsubMessage();
       unsubUpdated();
       unsubDeleted();

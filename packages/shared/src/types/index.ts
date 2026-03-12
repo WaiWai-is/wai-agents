@@ -8,3 +8,4 @@ export * from './models.js';
 export * from './socket-events.js';
 export * from './traces.js';
 export * from './triggers.js';
+export * from './workflows.js';

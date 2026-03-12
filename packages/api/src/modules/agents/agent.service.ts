@@ -100,9 +100,12 @@ export async function createAgent(userId: string, input: CreateAgentInput) {
   const baseSlug = slugify(input.name);
   let slug = baseSlug;
 
+  // Escape SQL LIKE wildcards to prevent user-controlled pattern matching
+  const escapedSlug = baseSlug.replace(/[%_\\]/g, '\\$&');
+
   // Ensure slug uniqueness (cap at 10000 to prevent unbounded loops)
   const existing =
-    await sql`SELECT slug FROM agents WHERE slug LIKE ${`${baseSlug}%`} ORDER BY slug`;
+    await sql`SELECT slug FROM agents WHERE slug LIKE ${`${escapedSlug}%`} ORDER BY slug`;
   if (existing.length > 0) {
     const existingSlugs = new Set(
       (existing as Array<Record<string, unknown>>).map((r) => r.slug as string),

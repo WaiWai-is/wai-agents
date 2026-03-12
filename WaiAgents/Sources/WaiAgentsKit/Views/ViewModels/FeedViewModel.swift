@@ -10,6 +10,10 @@ public final class FeedViewModel {
     public private(set) var likedItemIDs: Set<String> = []
 
     private let apiClient: APIClient
+    // nonisolated(unsafe) so deinit can cancel tasks.
+    // Task.cancel() is thread-safe; mutations are always on @MainActor.
+    @ObservationIgnored
+    nonisolated(unsafe) private var likeTasks: [String: Task<Void, Never>] = [:]
 
     private var nextCursor: String?
     public private(set) var hasMore: Bool = true
@@ -27,6 +31,12 @@ public final class FeedViewModel {
 
     public init(apiClient: APIClient) {
         self.apiClient = apiClient
+    }
+
+    deinit {
+        for task in likeTasks.values {
+            task.cancel()
+        }
     }
 
     public func loadFeed(tab: FeedTab) async {
@@ -102,39 +112,57 @@ public final class FeedViewModel {
     }
 
     public func likeItem(id: String) async {
+        likeTasks[id]?.cancel()
+
         likedItemIDs.insert(id)
         if let index = feedItems.firstIndex(where: { $0.id == id }) {
             feedItems[index].likeCount += 1
         }
 
-        do {
-            try await apiClient.requestVoid(.likeFeedItem(id: id))
-        } catch {
-            // Revert optimistic update on failure
-            likedItemIDs.remove(id)
-            if let index = feedItems.firstIndex(where: { $0.id == id }) {
-                feedItems[index].likeCount = max(0, feedItems[index].likeCount - 1)
+        let task = Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await self.apiClient.requestVoid(.likeFeedItem(id: id))
+            } catch {
+                guard !Task.isCancelled else { return }
+                // Revert optimistic update on failure
+                self.likedItemIDs.remove(id)
+                if let index = self.feedItems.firstIndex(where: { $0.id == id }) {
+                    self.feedItems[index].likeCount = max(0, self.feedItems[index].likeCount - 1)
+                }
+                self.error = String(describing: error)
             }
-            self.error = String(describing: error)
+            self.likeTasks.removeValue(forKey: id)
         }
+        likeTasks[id] = task
+        await task.value
     }
 
     public func unlikeItem(id: String) async {
+        likeTasks[id]?.cancel()
+
         likedItemIDs.remove(id)
         if let index = feedItems.firstIndex(where: { $0.id == id }) {
             feedItems[index].likeCount = max(0, feedItems[index].likeCount - 1)
         }
 
-        do {
-            try await apiClient.requestVoid(.unlikeFeedItem(id: id))
-        } catch {
-            // Revert optimistic update on failure
-            likedItemIDs.insert(id)
-            if let index = feedItems.firstIndex(where: { $0.id == id }) {
-                feedItems[index].likeCount += 1
+        let task = Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await self.apiClient.requestVoid(.unlikeFeedItem(id: id))
+            } catch {
+                guard !Task.isCancelled else { return }
+                // Revert optimistic update on failure
+                self.likedItemIDs.insert(id)
+                if let index = self.feedItems.firstIndex(where: { $0.id == id }) {
+                    self.feedItems[index].likeCount += 1
+                }
+                self.error = String(describing: error)
             }
-            self.error = String(describing: error)
+            self.likeTasks.removeValue(forKey: id)
         }
+        likeTasks[id] = task
+        await task.value
     }
 
     private func endpoint(for tab: FeedTab, cursor: String?) -> APIEndpoint {

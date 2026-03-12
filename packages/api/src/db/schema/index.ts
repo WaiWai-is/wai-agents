@@ -11,3 +11,4 @@ export * from './social.js';
 export * from './traces.js';
 export * from './triggers.js';
 export * from './users.js';
+export * from './workflows.js';

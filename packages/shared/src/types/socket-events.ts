@@ -1,6 +1,7 @@
 import type { CollaborationEvent } from './agent-collaborations.js';
 import type { AgentEvent } from './agent-events.js';
 import type { CrewEvent } from './crews.js';
+import type { WorkflowEvent } from './workflows.js';
 
 export interface ServerToClientEvents {
   'message:new': (message: unknown) => void;
@@ -13,6 +14,7 @@ export interface ServerToClientEvents {
   'a2a:event': (event: unknown) => void;
   'crew:event': (event: CrewEvent) => void;
   'collaboration:event': (event: CollaborationEvent) => void;
+  'workflow:event': (event: WorkflowEvent) => void;
   'presence:update': (data: { userId: string; status: 'online' | 'offline' }) => void;
   'presence:snapshot': (data: Record<string, 'online' | 'offline'>) => void;
 }

@@ -119,7 +119,7 @@ describe('Rate Limiter — per-IP isolation', () => {
     expect(r5.status).toBe(200);
   });
 
-  it('uses x-forwarded-for header first IP for identification', async () => {
+  it('uses x-forwarded-for header rightmost IP for identification', async () => {
     const app = buildApp(1, 60_000);
 
     const res1 = await app.fetch(
@@ -129,13 +129,21 @@ describe('Rate Limiter — per-IP isolation', () => {
     );
     expect(res1.status).toBe(200);
 
-    // Same first IP in x-forwarded-for — should be blocked
+    // Same rightmost IP in x-forwarded-for — should be blocked
     const res2 = await app.fetch(
+      new Request('http://localhost/ping', {
+        headers: { 'x-forwarded-for': '203.0.113.2, 10.0.0.1' },
+      }),
+    );
+    expect(res2.status).toBe(429);
+
+    // Different rightmost IP — should be allowed (different bucket)
+    const res3 = await app.fetch(
       new Request('http://localhost/ping', {
         headers: { 'x-forwarded-for': '203.0.113.1, 10.0.0.2' },
       }),
     );
-    expect(res2.status).toBe(429);
+    expect(res3.status).toBe(200);
   });
 
   it('falls back to x-real-ip when x-forwarded-for is absent', async () => {

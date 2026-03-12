@@ -19,11 +19,12 @@ describe('ServerToClientEvents type shape', () => {
       'a2a:event': true,
       'crew:event': true,
       'collaboration:event': true,
+      'workflow:event': true,
       'presence:update': true,
       'presence:snapshot': true,
     };
 
-    expect(Object.keys(events)).toHaveLength(12);
+    expect(Object.keys(events)).toHaveLength(13);
   });
 
   it('message:deleted event data has correct shape', () => {

@@ -20,13 +20,17 @@ public final class ConversationDetailViewModel {
     private var nextCursor: String?
     private var hasMore: Bool = true
     private var isLoadingMore: Bool = false
-    private var replyPollingTask: Task<Void, Never>?
+    // nonisolated(unsafe) so deinit can cancel these tasks.
+    // Task.cancel() is thread-safe; mutations are always on @MainActor.
+    @ObservationIgnored
+    nonisolated(unsafe) private var replyPollingTask: Task<Void, Never>?
 
     /// Set of known message IDs for O(1) duplicate checking.
     private var messageIDs: Set<String> = []
 
     /// Task for debouncing the typing-stopped event.
-    private var typingDebounceTask: Task<Void, Never>?
+    @ObservationIgnored
+    nonisolated(unsafe) private var typingDebounceTask: Task<Void, Never>?
 
     /// Whether we have already sent a typing=true event that hasn't been cancelled yet.
     private var isSendingTyping = false
@@ -112,6 +116,11 @@ public final class ConversationDetailViewModel {
         self.apiClient = apiClient
         self.currentUserID = currentUserID
         self.webSocketClient = webSocketClient
+    }
+
+    deinit {
+        replyPollingTask?.cancel()
+        typingDebounceTask?.cancel()
     }
 
     /// Join the conversation channel and wire up real-time handlers.

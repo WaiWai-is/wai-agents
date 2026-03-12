@@ -33,11 +33,10 @@ function renderInlineMarkdown(text: string): string {
   result = result.replace(/\*(.+?)\*/g, '<em>$1</em>');
   // Inline code
   result = result.replace(/`([^`]+)`/g, '<code class="cb-inline-code">$1</code>');
-  // Links
-  result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) => {
-    // Sanitize URL - only allow http, https, mailto
-    const sanitizedUrl = /^(https?:|mailto:)/i.test(url) ? url : '#';
-    return `<a href="${sanitizedUrl}" target="_blank" rel="noopener noreferrer" class="cb-link">${text}</a>`;
+  // Links — reject non-http/https/mailto protocols as plain text to prevent XSS
+  result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
+    if (!/^(https?:|mailto:)/i.test(url)) return match;
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="cb-link">${text}</a>`;
   });
   // Line breaks
   result = result.replace(/\n/g, '<br/>');

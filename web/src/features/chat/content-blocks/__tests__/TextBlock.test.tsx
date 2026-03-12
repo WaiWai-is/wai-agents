@@ -61,15 +61,17 @@ describe('TextBlock', () => {
     expect(link?.getAttribute('rel')).toBe('noopener noreferrer');
   });
 
-  it('sanitizes javascript: URLs in links to "#"', () => {
+  it('renders javascript: URLs as plain text instead of links', () => {
     const block: TextBlockData = {
       type: 'text',
       text: 'Click [here](javascript:alert(1)) now',
     };
     const { container } = render(<TextBlock block={block} />);
+    // No <a> tag should be rendered for javascript: URLs
     const link = container.querySelector('a');
-    expect(link).toBeInTheDocument();
-    expect(link?.getAttribute('href')).toBe('#');
+    expect(link).not.toBeInTheDocument();
+    // The markdown syntax should remain as escaped plain text
+    expect(container.textContent).toContain('[here](javascript:alert(1))');
   });
 
   it('renders fenced code blocks with highlighting', () => {
