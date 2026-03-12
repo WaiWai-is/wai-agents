@@ -3,6 +3,7 @@ import type {
   CollaborationEvent,
   CrewEvent,
   EvalEvent,
+  MemoryEvent,
   WorkflowEvent,
 } from '@wai-agents/shared';
 import type { Server as SocketIOServer } from 'socket.io';
@@ -77,6 +78,11 @@ export function emitEvalEvent(userId: string, event: EvalEvent): void {
 export function emitWorkflowEvent(userId: string, event: WorkflowEvent): void {
   if (!io) throw new Error('Socket.IO not initialized');
   io.to(`user:${userId}`).emit('workflow:event', event);
+}
+
+export function emitMemoryEvent(userId: string, event: MemoryEvent): void {
+  if (!io) throw new Error('Socket.IO not initialized');
+  io.to(`user:${userId}`).emit('memory:event', event);
 }
 
 export function emitCollaborationEvent(userId: string, event: CollaborationEvent): void {

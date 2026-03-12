@@ -11,9 +11,12 @@ function formatMemory(row: Record<string, unknown>) {
     memory_type: row.memory_type,
     content: row.content,
     embedding_key: row.embedding_key ?? null,
+    embedding_text: row.embedding_text ?? null,
     importance: row.importance,
     access_count: row.access_count,
     last_accessed_at: toISO(row.last_accessed_at),
+    source_conversation_id: row.source_conversation_id ?? null,
+    source_message_id: row.source_message_id ?? null,
     expires_at: toISO(row.expires_at),
     metadata: row.metadata,
     created_at: toISO(row.inserted_at),
@@ -22,7 +25,8 @@ function formatMemory(row: Record<string, unknown>) {
 }
 
 const SELECT_COLS = `id, agent_id, user_id, memory_type, content, embedding_key,
-  importance, access_count, last_accessed_at, expires_at,
+  embedding_text, importance, access_count, last_accessed_at,
+  source_conversation_id, source_message_id, expires_at,
   metadata, inserted_at, updated_at`;
 
 async function assertAgentOwner(agentId: string, userId: string): Promise<void> {
@@ -87,11 +91,14 @@ export async function createMemory(agentId: string, userId: string, input: Creat
   await sql`
     INSERT INTO agent_memories (
       id, agent_id, user_id, memory_type, content, embedding_key,
-      importance, expires_at, metadata, inserted_at, updated_at
+      embedding_text, importance, source_conversation_id, source_message_id,
+      expires_at, metadata, inserted_at, updated_at
     ) VALUES (
       ${memoryId}, ${agentId}, ${userId}, ${input.memory_type}, ${input.content},
-      ${input.embedding_key ?? null}, ${input.importance ?? 0.5},
-      ${input.expires_at ?? null}, ${metadataJson}::jsonb, ${now}, ${now}
+      ${input.embedding_key ?? null}, ${input.embedding_text ?? null},
+      ${input.importance ?? 0.5}, ${input.source_conversation_id ?? null},
+      ${input.source_message_id ?? null}, ${input.expires_at ?? null},
+      ${metadataJson}::jsonb, ${now}, ${now}
     )
   `;
 
@@ -121,6 +128,7 @@ export async function updateMemory(memoryId: string, userId: string, updates: Up
   const hasType = updates.memory_type !== undefined;
   const hasImportance = updates.importance !== undefined;
   const hasEmbeddingKey = updates.embedding_key !== undefined;
+  const hasEmbeddingText = updates.embedding_text !== undefined;
   const hasExpiresAt = updates.expires_at !== undefined;
   const hasMeta = updates.metadata !== undefined;
 
@@ -128,18 +136,20 @@ export async function updateMemory(memoryId: string, userId: string, updates: Up
   const memoryType: string | null = hasType ? (updates.memory_type as string) : null;
   const importance: number = hasImportance ? (updates.importance as number) : 0.5;
   const embeddingKey: string | null = hasEmbeddingKey ? (updates.embedding_key ?? null) : null;
+  const embeddingText: string | null = hasEmbeddingText ? (updates.embedding_text ?? null) : null;
   const expiresAt: string | null = hasExpiresAt ? (updates.expires_at ?? null) : null;
   const metadataJson: string | null = hasMeta ? JSON.stringify(updates.metadata) : null;
 
   const rows = await sql`
     UPDATE agent_memories SET
-      content       = CASE WHEN ${hasContent} THEN ${content} ELSE content END,
-      memory_type   = CASE WHEN ${hasType} THEN ${memoryType} ELSE memory_type END,
-      importance    = CASE WHEN ${hasImportance} THEN ${importance} ELSE importance END,
-      embedding_key = CASE WHEN ${hasEmbeddingKey} THEN ${embeddingKey} ELSE embedding_key END,
-      expires_at    = CASE WHEN ${hasExpiresAt} THEN ${expiresAt}::timestamptz ELSE expires_at END,
-      metadata      = CASE WHEN ${hasMeta} THEN ${metadataJson}::jsonb ELSE metadata END,
-      updated_at    = NOW()
+      content        = CASE WHEN ${hasContent} THEN ${content} ELSE content END,
+      memory_type    = CASE WHEN ${hasType} THEN ${memoryType} ELSE memory_type END,
+      importance     = CASE WHEN ${hasImportance} THEN ${importance} ELSE importance END,
+      embedding_key  = CASE WHEN ${hasEmbeddingKey} THEN ${embeddingKey} ELSE embedding_key END,
+      embedding_text = CASE WHEN ${hasEmbeddingText} THEN ${embeddingText} ELSE embedding_text END,
+      expires_at     = CASE WHEN ${hasExpiresAt} THEN ${expiresAt}::timestamptz ELSE expires_at END,
+      metadata       = CASE WHEN ${hasMeta} THEN ${metadataJson}::jsonb ELSE metadata END,
+      updated_at     = NOW()
     WHERE id = ${memoryId}
     RETURNING ${sql.unsafe(SELECT_COLS)}
   `;

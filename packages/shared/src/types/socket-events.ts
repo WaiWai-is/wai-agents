@@ -1,5 +1,6 @@
 import type { CollaborationEvent } from './agent-collaborations.js';
 import type { AgentEvent } from './agent-events.js';
+import type { MemoryEvent } from './agent-memories.js';
 import type { CrewEvent } from './crews.js';
 import type { EvalEvent } from './evaluations.js';
 import type { WorkflowEvent } from './workflows.js';
@@ -17,6 +18,7 @@ export interface ServerToClientEvents {
   'collaboration:event': (event: CollaborationEvent) => void;
   'eval:event': (event: EvalEvent) => void;
   'workflow:event': (event: WorkflowEvent) => void;
+  'memory:event': (event: MemoryEvent) => void;
   'presence:update': (data: { userId: string; status: 'online' | 'offline' }) => void;
   'presence:snapshot': (data: Record<string, 'online' | 'offline'>) => void;
 }

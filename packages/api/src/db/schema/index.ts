@@ -1,4 +1,5 @@
 export * from './agent-collaborations.js';
+export * from './agent-memory.js';
 export * from './agents.js';
 export * from './conversations.js';
 export * from './crews.js';

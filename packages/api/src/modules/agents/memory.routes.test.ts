@@ -20,6 +20,20 @@ vi.mock('./memory.service.js', () => ({
   recallMemories: vi.fn(),
 }));
 
+// Mock memory-consolidation service
+vi.mock('./memory-consolidation.service.js', () => ({
+  consolidateMemories: vi.fn(),
+  decayAgentMemories: vi.fn(),
+  getMemoryStats: vi.fn(),
+  softDeleteMemory: vi.fn(),
+  recallMemoriesAdvanced: vi.fn(),
+}));
+
+// Mock emitter (used by routes for Socket.IO events)
+vi.mock('../../ws/emitter.js', () => ({
+  emitMemoryEvent: vi.fn(),
+}));
+
 async function getTokenHeader(): Promise<Record<string, string>> {
   const { generateTokens } = await import('../auth/auth.service.js');
   const { access_token } = await generateTokens('user-uuid', 'user');
@@ -130,9 +144,12 @@ describe('GET /agents/:agentId/memories', () => {
         memory_type: 'fact',
         content: 'User likes dark mode',
         embedding_key: null,
+        embedding_text: null,
         importance: 0.7,
         access_count: 0,
         last_accessed_at: null,
+        source_conversation_id: null,
+        source_message_id: null,
         expires_at: null,
         metadata: {},
         created_at: '2026-01-01T00:00:00.000Z',
@@ -372,9 +389,12 @@ describe('GET /agents/:agentId/memories/recall', () => {
         memory_type: 'fact',
         content: 'Recalled memory',
         embedding_key: null,
+        embedding_text: null,
         importance: 0.8,
         access_count: 1,
         last_accessed_at: '2026-01-02T00:00:00.000Z',
+        source_conversation_id: null,
+        source_message_id: null,
         expires_at: null,
         metadata: {},
         created_at: '2026-01-01T00:00:00.000Z',
@@ -575,8 +595,8 @@ describe('PATCH /agents/:agentId/memories/:id', () => {
 
 describe('DELETE /agents/:agentId/memories/:id', () => {
   it('returns 200 with ok true', async () => {
-    const { deleteMemory } = await import('./memory.service.js');
-    vi.mocked(deleteMemory).mockResolvedValueOnce(undefined);
+    const { softDeleteMemory } = await import('./memory-consolidation.service.js');
+    vi.mocked(softDeleteMemory).mockResolvedValueOnce(undefined);
 
     const authHeaders = await getTokenHeader();
     const { status, body } = await request(
@@ -591,9 +611,9 @@ describe('DELETE /agents/:agentId/memories/:id', () => {
   });
 
   it('returns 404 for non-existent memory', async () => {
-    const { deleteMemory } = await import('./memory.service.js');
-    vi.mocked(deleteMemory).mockRejectedValueOnce(
-      Object.assign(new Error('Memory not found'), { code: 'NOT_FOUND' }),
+    const { softDeleteMemory } = await import('./memory-consolidation.service.js');
+    vi.mocked(softDeleteMemory).mockRejectedValueOnce(
+      Object.assign(new Error('Memory not found or access denied'), { code: 'NOT_FOUND' }),
     );
 
     const authHeaders = await getTokenHeader();
