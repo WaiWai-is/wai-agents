@@ -243,7 +243,7 @@ describe('Marketplace — empty results', () => {
   it('empty search with category shows category in message', () => {
     const filteredAgents: unknown[] = [];
     const loading = false;
-    const activeCategory = 'Coding & Development';
+    const activeCategory: string = 'Coding & Development';
 
     const showEmpty = filteredAgents.length === 0 && !loading;
     expect(showEmpty).toBe(true);
