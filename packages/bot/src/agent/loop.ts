@@ -1,75 +1,69 @@
 /**
- * Agent Loop — the execution engine.
+ * Agent Loop — the execution engine powered by Claude Agent SDK.
  *
- * Takes a user message, classifies intent, builds soul prompt,
- * calls Claude with tools, handles tool execution, returns response.
+ * Uses @anthropic-ai/claude-agent-sdk with custom MCP tools
+ * for search, commitment tracking, and entity extraction.
  */
 
-import Anthropic from "@anthropic-ai/sdk";
-import { config, log, captureError, type AgentResult, type Intent } from "@wai/core";
+import { query, tool, createSdkMcpServer } from "@anthropic-ai/claude-agent-sdk";
+import { z } from "zod";
+import { log, captureError, type AgentResult } from "@wai/core";
 import { classifyIntent, getModelForIntent } from "./router.js";
 import { buildSoulPrompt } from "./soul.js";
 
-const MAX_TURNS = 10;
-
-const client = new Anthropic({ apiKey: config.anthropicApiKey });
-
-// Tool definitions for Claude
-const TOOLS: Anthropic.Tool[] = [
-  {
-    name: "search_messages",
-    description: "Search user's Telegram message history by semantic meaning.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        query: { type: "string", description: "Natural language search query" },
-      },
-      required: ["query"],
-    },
+// Custom MCP tools for Wai
+const searchMessages = tool(
+  "search_messages",
+  "Search user's Telegram message history by semantic meaning.",
+  { query: z.string().describe("Natural language search query") },
+  async ({ query: searchQuery }) => {
+    log.info({ service: "tool", action: "search_messages", query: searchQuery });
+    // TODO: implement pgvector semantic search
+    return {
+      content: [{ type: "text" as const, text: `[Search results for: ${searchQuery}] (search implementation pending)` }],
+    };
   },
-  {
-    name: "track_commitment",
-    description: "Track a promise or commitment detected in conversation.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        who: { type: "string", description: "Person who made the promise" },
-        what: { type: "string", description: "What was promised" },
-        deadline: { type: "string", description: "When it should be done" },
-        direction: { type: "string", enum: ["i_promised", "they_promised"] },
-      },
-      required: ["who", "what", "direction"],
-    },
-  },
-  {
-    name: "extract_entities",
-    description: "Extract people, topics, decisions, amounts from text.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        text: { type: "string", description: "Text to extract entities from" },
-      },
-      required: ["text"],
-    },
-  },
-];
+);
 
-async function executeTool(name: string, input: Record<string, unknown>): Promise<string> {
-  try {
-    switch (name) {
-      case "search_messages":
-        return `[Search results for: ${input.query}] (search implementation pending)`;
-      case "track_commitment":
-        return `✅ Tracked: ${input.who} ${input.direction === "i_promised" ? "you promised" : "promised"} to ${input.what}`;
-      case "extract_entities":
-        return `[Entities extracted from text] (extraction implementation pending)`;
-      default:
-        return `Unknown tool: ${name}`;
-    }
-  } catch (error) {
-    return `Error executing ${name}: ${error}`;
-  }
-}
+const trackCommitment = tool(
+  "track_commitment",
+  "Track a promise or commitment detected in conversation.",
+  {
+    who: z.string().describe("Person who made the promise"),
+    what: z.string().describe("What was promised"),
+    deadline: z.string().optional().describe("When it should be done"),
+    direction: z.enum(["i_promised", "they_promised"]).describe("Direction of the commitment"),
+  },
+  async ({ who, what, direction }) => {
+    log.info({ service: "tool", action: "track_commitment", who, what, direction });
+    // TODO: save to commitments table
+    const dirText = direction === "i_promised" ? "you promised" : "promised";
+    return {
+      content: [{ type: "text" as const, text: `✅ Tracked: ${who} ${dirText} to ${what}` }],
+    };
+  },
+);
+
+const extractEntities = tool(
+  "extract_entities",
+  "Extract people, topics, decisions, amounts from text.",
+  { text: z.string().describe("Text to extract entities from") },
+  async ({ text }) => {
+    log.info({ service: "tool", action: "extract_entities", textLength: text.length });
+    // Use the pattern-based extractor
+    const { extractEntities: extract, formatEntities } = await import("./entities.js");
+    const entities = extract(text);
+    return {
+      content: [{ type: "text" as const, text: entities.length > 0 ? formatEntities(entities) : "No entities detected." }],
+    };
+  },
+);
+
+// Create in-process MCP server with Wai tools
+const waiToolsServer = createSdkMcpServer({
+  name: "wai-tools",
+  tools: [searchMessages, trackCommitment, extractEntities],
+});
 
 export async function runAgent(opts: {
   message: string;
@@ -93,98 +87,62 @@ export async function runAgent(opts: {
     userLanguage: opts.userLanguage,
   });
 
-  // 3. Build message history
-  const messages: Anthropic.MessageParam[] = [];
-  for (const msg of opts.conversationHistory?.slice(-20) ?? []) {
-    messages.push({ role: msg.role, content: msg.content });
+  // 3. Build prompt with conversation context
+  let prompt = "";
+
+  // Include conversation history as context
+  if (opts.conversationHistory && opts.conversationHistory.length > 0) {
+    const historyText = opts.conversationHistory
+      .slice(-20)
+      .map((msg) => `${msg.role === "user" ? "User" : "Wai"}: ${msg.content}`)
+      .join("\n\n");
+    prompt += `Previous conversation:\n${historyText}\n\n---\n\n`;
   }
 
   // Add current message
-  let userContent = opts.message;
   if (opts.voiceTranscript) {
-    userContent = opts.message
+    prompt += opts.message
       ? `[Voice transcript]: ${opts.voiceTranscript}\n\nUser's text: ${opts.message}`
       : `[Voice transcript]: ${opts.voiceTranscript}`;
+  } else {
+    prompt += opts.message;
   }
-  messages.push({ role: "user", content: userContent });
 
-  // 4. Agent loop with tool calling
-  let totalInputTokens = 0;
-  let totalOutputTokens = 0;
-  let toolCallCount = 0;
+  // 4. Run via Agent SDK
+  let result = "";
 
-  for (let turn = 0; turn < MAX_TURNS; turn++) {
-    let response: Anthropic.Message;
-    try {
-      response = await client.messages.create({
+  try {
+    for await (const message of query({
+      prompt,
+      options: {
+        systemPrompt,
         model,
-        max_tokens: 4096,
-        system: systemPrompt,
-        messages,
-        tools: TOOLS,
-      });
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
-      log.error({ service: "agent", action: "api-error", userId: opts.userId, error: errMsg, turn });
-      captureError(error instanceof Error ? error : new Error(errMsg), { userId: opts.userId, intent, turn: String(turn) });
-      throw error;
-    }
-
-    totalInputTokens += response.usage.input_tokens;
-    totalOutputTokens += response.usage.output_tokens;
-
-    if (response.stop_reason === "tool_use") {
-      messages.push({ role: "assistant", content: response.content });
-
-      const toolResults: Anthropic.ToolResultBlockParam[] = [];
-      for (const block of response.content) {
-        if (block.type === "tool_use") {
-          toolCallCount++;
-          log.info({ service: "agent", action: "tool-call", tool: block.name, turn, userId: opts.userId });
-          const result = await executeTool(block.name, block.input as Record<string, unknown>);
-          toolResults.push({
-            type: "tool_result",
-            tool_use_id: block.id,
-            content: result,
-          });
-        }
-      }
-      messages.push({ role: "user", content: toolResults });
-      continue;
-    }
-
-    // Extract text response
-    const textParts: string[] = [];
-    for (const block of response.content) {
-      if (block.type === "text") {
-        textParts.push(block.text);
+        maxTurns: 10,
+        tools: [],
+        mcpServers: { "wai-tools": waiToolsServer },
+        permissionMode: "bypassPermissions",
+        allowDangerouslySkipPermissions: true,
+      },
+    })) {
+      if ("result" in message) {
+        result = message.result;
       }
     }
-
-    log.info({
-      service: "agent", action: "run-complete", userId: opts.userId,
-      intent, inputTokens: totalInputTokens, outputTokens: totalOutputTokens,
-      toolCalls: toolCallCount, turns: turn + 1,
-    });
-
-    return {
-      response: textParts.join("\n") || "I processed your request.",
-      intent,
-      modelUsed: model,
-      inputTokens: totalInputTokens,
-      outputTokens: totalOutputTokens,
-      toolCalls: toolCallCount,
-    };
+  } catch (error) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    log.error({ service: "agent", action: "sdk-error", userId: opts.userId, error: errMsg });
+    captureError(error instanceof Error ? error : new Error(errMsg), { userId: opts.userId, intent });
+    throw error;
   }
 
-  log.warn({ service: "agent", action: "max-turns", userId: opts.userId, toolCalls: toolCallCount });
+  log.info({ service: "agent", action: "run-complete", userId: opts.userId, intent, responseLength: result.length });
 
   return {
-    response: "I've been working on this but reached my turn limit.",
+    response: result || "I processed your request.",
     intent,
     modelUsed: model,
-    inputTokens: totalInputTokens,
-    outputTokens: totalOutputTokens,
-    toolCalls: toolCallCount,
+    inputTokens: 0, // Agent SDK doesn't expose token counts directly
+    outputTokens: 0,
+    toolCalls: 0,
   };
 }
