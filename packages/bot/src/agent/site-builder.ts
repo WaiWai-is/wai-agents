@@ -106,38 +106,176 @@ export function generateSlug(name: string): string {
     || `site-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+/** Progress callback type for real-time status updates. */
+export type ProgressCallback = (stage: string, detail: string) => Promise<void>;
+
+/** Site plan created during the planning stage. */
+export interface SitePlan {
+  sections: string[];
+  colorScheme: string;
+  typography: string;
+  interactiveElements: string[];
+  estimatedComplexity: "simple" | "medium" | "complex";
+}
+
+const PLAN_PROMPT = `You are a web architect. Given a project description, create a brief site plan.
+
+Project: {description}
+
+Respond in this EXACT JSON format (no markdown, no explanation):
+{
+  "sections": ["Hero with gradient background", "Features grid (3 cards)", "Testimonials carousel", "Pricing table", "FAQ accordion", "Contact form", "Footer"],
+  "colorScheme": "Deep blue primary (#1e40af), warm amber accent (#f59e0b), slate gray text",
+  "typography": "Inter for body, Playfair Display for headings",
+  "interactiveElements": ["Mobile hamburger menu", "FAQ accordion", "Dark mode toggle", "Form validation", "Scroll animations"],
+  "estimatedComplexity": "medium"
+}`;
+
 /**
- * Generate HTML for a site using Claude.
+ * Plan a site before generation — the "Lovable planning stage".
+ * Returns a structured plan that guides generation.
  */
-export async function generateSiteHtml(description: string): Promise<string | null> {
+export async function planSite(description: string): Promise<SitePlan> {
   const client = new Anthropic({ apiKey: config.anthropicApiKey });
 
-  log.info({ service: "site-builder", action: "generating", description: description.slice(0, 100) });
+  log.info({ service: "site-builder", action: "planning", description: description.slice(0, 100) });
 
   const response = await client.messages.create({
     model: "claude-haiku-4-5",
-    max_tokens: 4096,
+    max_tokens: 1024,
     messages: [
-      { role: "user", content: SITE_PROMPT.replace("{description}", description.slice(0, 3000)) },
+      { role: "user", content: PLAN_PROMPT.replace("{description}", description.slice(0, 2000)) },
     ],
   });
 
-  let html = response.content[0].type === "text" ? response.content[0].text.trim() : "";
+  let text = response.content[0]?.type === "text" ? response.content[0].text.trim() : "";
+
+  // Strip markdown wrapping if present
+  if (text.startsWith("```")) {
+    text = text.replace(/^```\w*\n?/, "").replace(/\n?```$/, "").trim();
+  }
+
+  try {
+    const plan = JSON.parse(text) as SitePlan;
+    log.info({ service: "site-builder", action: "planned", sections: plan.sections.length, complexity: plan.estimatedComplexity });
+    return plan;
+  } catch {
+    log.warn({ service: "site-builder", action: "plan-parse-failed", text: text.slice(0, 200) });
+    // Return a sensible default plan
+    return {
+      sections: ["Hero", "Features", "Testimonials", "Contact", "Footer"],
+      colorScheme: "Blue primary, white background",
+      typography: "Inter for body",
+      interactiveElements: ["Mobile menu", "Dark mode toggle"],
+      estimatedComplexity: "medium",
+    };
+  }
+}
+
+/**
+ * Clean raw Claude output into valid HTML.
+ */
+export function cleanHtmlOutput(raw: string): string | null {
+  let html = raw.trim();
 
   // Strip markdown code blocks
   if (html.startsWith("```")) {
     html = html.replace(/^```\w*\n?/, "").replace(/\n?```$/, "").trim();
   }
 
-  // Extract HTML if wrapped
+  // Extract HTML if wrapped in other text
   if (!html.startsWith("<!DOCTYPE") && !html.startsWith("<html")) {
     const match = html.match(/<!DOCTYPE html[\s\S]*<\/html>/i);
     if (match) html = match[0];
     else return null;
   }
 
-  log.info({ service: "site-builder", action: "generated", htmlSize: html.length });
   return html;
+}
+
+/**
+ * Generate HTML for a site using Claude with planning context.
+ */
+export async function generateSiteHtml(
+  description: string,
+  plan?: SitePlan,
+  onProgress?: ProgressCallback,
+): Promise<string | null> {
+  const client = new Anthropic({ apiKey: config.anthropicApiKey });
+
+  log.info({ service: "site-builder", action: "generating", description: description.slice(0, 100) });
+
+  // Build prompt with optional plan context
+  let prompt = SITE_PROMPT.replace("{description}", description.slice(0, 3000));
+  if (plan) {
+    prompt += `\n\n## Site Plan (follow this structure)
+- Sections: ${plan.sections.join(" → ")}
+- Color scheme: ${plan.colorScheme}
+- Typography: ${plan.typography}
+- Interactive elements: ${plan.interactiveElements.join(", ")}`;
+  }
+
+  await onProgress?.("generating", "Writing HTML, CSS, and JavaScript...");
+
+  const response = await client.messages.create({
+    model: "claude-haiku-4-5",
+    max_tokens: 16000,
+    messages: [{ role: "user", content: prompt }],
+  });
+
+  const raw = response.content[0]?.type === "text" ? response.content[0].text : "";
+  const html = cleanHtmlOutput(raw);
+
+  if (html) {
+    log.info({ service: "site-builder", action: "generated", htmlSize: html.length });
+  } else {
+    log.warn({ service: "site-builder", action: "generation-failed", rawLength: raw.length });
+  }
+
+  return html;
+}
+
+/**
+ * Generate with retry — if first attempt fails, retry with simplified prompt.
+ */
+export async function generateSiteHtmlWithRetry(
+  description: string,
+  plan?: SitePlan,
+  onProgress?: ProgressCallback,
+): Promise<string | null> {
+  // Attempt 1: full generation
+  const html = await generateSiteHtml(description, plan, onProgress);
+  if (html) return html;
+
+  // Attempt 2: retry with simplified instructions
+  log.info({ service: "site-builder", action: "retrying", description: description.slice(0, 100) });
+  await onProgress?.("retrying", "First attempt failed, retrying with adjusted approach...");
+
+  const client = new Anthropic({ apiKey: config.anthropicApiKey });
+  const retryPrompt = `Generate a single-page website for: ${description.slice(0, 2000)}
+
+Use Tailwind CSS CDN (<script src="https://cdn.tailwindcss.com"></script>).
+Include: hero section, main content, footer with "Made with Wai ✨".
+Mobile responsive. Modern design.
+
+Respond with ONLY the HTML starting with <!DOCTYPE html>. No markdown.`;
+
+  const response = await client.messages.create({
+    model: "claude-haiku-4-5",
+    max_tokens: 8000,
+    messages: [{ role: "user", content: retryPrompt }],
+  });
+
+  const raw = response.content[0]?.type === "text" ? response.content[0].text : "";
+  const retryHtml = cleanHtmlOutput(raw);
+
+  if (retryHtml) {
+    log.info({ service: "site-builder", action: "retry-succeeded", htmlSize: retryHtml.length });
+  } else {
+    log.error({ service: "site-builder", action: "retry-failed" });
+  }
+
+  return retryHtml;
 }
 
 /**
@@ -342,17 +480,28 @@ Requirements:
   }
 }
 
-/**
- * Build and deploy a site — the main entry point.
- * Uses simple mode (single HTML) by default, agent mode for complex descriptions.
- */
-export async function buildSite(description: string, name?: string, mode: "simple" | "agent" = "simple"): Promise<{
+/** Result of buildSite with plan details. */
+export interface BuildSiteResult {
   success: boolean;
   url?: string;
   slug?: string;
   error?: string;
   fileCount?: number;
-}> {
+  plan?: SitePlan;
+}
+
+/**
+ * Build and deploy a site — the main entry point.
+ *
+ * Flow: Plan → Generate (with retry) → Deploy
+ * Uses simple mode by default, agent mode for complex descriptions.
+ */
+export async function buildSite(
+  description: string,
+  name?: string,
+  mode: "simple" | "agent" = "simple",
+  onProgress?: ProgressCallback,
+): Promise<BuildSiteResult> {
   const slug = generateSlug(name ?? description.split(".")[0] ?? description.slice(0, 30));
 
   if (mode === "agent") {
@@ -360,12 +509,19 @@ export async function buildSite(description: string, name?: string, mode: "simpl
     return { ...result, slug };
   }
 
-  // Simple mode: single HTML file
-  const html = await generateSiteHtml(description);
+  // Step 1: Plan the site
+  await onProgress?.("planning", "Analyzing your description and planning the site architecture...");
+  const plan = await planSite(description);
+  await onProgress?.("planned", `Plan ready: ${plan.sections.length} sections, ${plan.interactiveElements.length} interactive elements`);
+
+  // Step 2: Generate HTML with retry on failure
+  const html = await generateSiteHtmlWithRetry(description, plan, onProgress);
   if (!html) {
-    return { success: false, slug, error: "Failed to generate HTML" };
+    return { success: false, slug, error: "Failed to generate HTML after 2 attempts", plan };
   }
 
+  // Step 3: Deploy
+  await onProgress?.("deploying", `Deploying to ${slug}.wai.computer...`);
   const result = await deployToCloudflare(slug, html);
-  return { ...result, slug, fileCount: 1 };
+  return { ...result, slug, fileCount: 1, plan };
 }

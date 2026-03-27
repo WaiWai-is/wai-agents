@@ -107,25 +107,68 @@ Commands:
     log.info({ service: "command", action: "build", userId, mode, descriptionLength: description.length });
 
     try {
+      // Send initial progress message that we'll edit in real-time
+      const progressMsg = await ctx.reply("🔨 *Building your site...*\n\n📋 Planning architecture...", {
+        parse_mode: "Markdown",
+      });
+
+      // Progress callback — edits the message in real-time
+      const stageIcons: Record<string, string> = {
+        planning: "📋", planned: "✅", generating: "⚡", retrying: "🔄", deploying: "🚀",
+      };
+      const onProgress = async (stage: string, detail: string) => {
+        const icon = stageIcons[stage] ?? "⏳";
+        try {
+          await ctx.api.editMessageText(
+            ctx.chat.id,
+            progressMsg.message_id,
+            `🔨 *Building your site...*\n\n${icon} ${detail}`,
+            { parse_mode: "Markdown" },
+          );
+        } catch {
+          // Edit may fail if message hasn't changed enough — ignore
+        }
+      };
+
       await ctx.replyWithChatAction("typing");
-      if (useAgent) {
-        await ctx.reply("🤖 Agent mode: building multi-file site...");
-      }
 
       const { buildSite } = await import("../agent/site-builder.js");
       const name = description.includes(".") ? description.split(".")[0]?.slice(0, 40) : description.slice(0, 40);
-      const result = await buildSite(description, name, mode);
+      const result = await buildSite(description, name, mode, onProgress);
 
       if (result.success) {
         log.info({ service: "command", action: "build-success", userId, slug: result.slug, url: result.url });
         const fileInfo = result.fileCount && result.fileCount > 1 ? `\n📂 Files: ${result.fileCount}` : "";
-        await ctx.reply(
-          `🚀 *Site deployed!*\n\n🌐 URL: ${result.url}\n📁 Slug: \`${result.slug}\`${fileInfo}`,
-          { parse_mode: "Markdown" },
-        );
+        const planInfo = result.plan
+          ? `\n📐 Sections: ${result.plan.sections.length} | Interactive: ${result.plan.interactiveElements.length}`
+          : "";
+
+        // Update progress message with final result
+        try {
+          await ctx.api.editMessageText(
+            ctx.chat.id,
+            progressMsg.message_id,
+            `🚀 *Site deployed!*\n\n🌐 URL: ${result.url}\n📁 Slug: \`${result.slug}\`${fileInfo}${planInfo}`,
+            { parse_mode: "Markdown" },
+          );
+        } catch {
+          // Fallback: send new message
+          await ctx.reply(
+            `🚀 *Site deployed!*\n\n🌐 URL: ${result.url}\n📁 Slug: \`${result.slug}\`${fileInfo}${planInfo}`,
+            { parse_mode: "Markdown" },
+          );
+        }
       } else {
         log.error({ service: "command", action: "build-failed", userId, error: result.error });
-        await ctx.reply(`❌ ${result.error}\n\nTry a more detailed description.`);
+        try {
+          await ctx.api.editMessageText(
+            ctx.chat.id,
+            progressMsg.message_id,
+            `❌ ${result.error}\n\nTry a more detailed description.`,
+          );
+        } catch {
+          await ctx.reply(`❌ ${result.error}\n\nTry a more detailed description.`);
+        }
       }
     } catch (error) {
       log.error({ service: "command", action: "build-error", userId, error: String(error) });
