@@ -1,0 +1,2 @@
+[    2751ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ https://openraccoon.com/favicon.ico:0
+[   54978ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ https://openraccoon.com/api/v1/marketplace/agents/design-helper:0

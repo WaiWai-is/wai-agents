@@ -1,28 +1,26 @@
 {
-  "name": "wai-agents",
+  "name": "wai",
   "private": true,
+  "version": "0.1.0",
+  "description": "Wai — AI Partner in Telegram. Memory + Build + Chief of Staff.",
+  "type": "module",
   "scripts": {
-    "build": "pnpm -r build",
-    "test": "pnpm -r test",
-    "typecheck": "pnpm -r typecheck",
-    "lint": "biome check .",
-    "lint:fix": "biome check --write .",
-    "dev:api": "pnpm --filter @wai-agents/api dev",
-    "dev:mcp-memory": "pnpm --filter @wai-agents/mcp-memory dev",
-    "dev:mcp-web-search": "pnpm --filter @wai-agents/mcp-web-search dev",
-    "dev:mcp-pr-tools": "pnpm --filter @wai-agents/mcp-pr-tools dev",
-    "dev:mcp-agent-comm": "pnpm --filter @wai-agents/mcp-agent-comm dev",
-    "dev:web": "pnpm --filter wai-agents-web dev"
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "dev:bot": "pnpm --filter @wai/bot dev",
+    "dev:api": "pnpm --filter @wai/api dev",
+    "dev:web": "pnpm --filter @wai/web dev"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.0.0"
+    "@types/node": "^25.5.0",
+    "turbo": "^2.4.0",
+    "typescript": "^5.8.0"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "argon2",
-      "esbuild",
-      "msgpackr-extract",
-      "msw"
-    ]
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22.0.0"
   }
 }

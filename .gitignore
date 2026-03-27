@@ -1,60 +1,8 @@
-# Elixir
-wai_agents/_build/
-wai_agents/deps/
-wai_agents/.fetch
-wai_agents/erl_crash.dump
-wai_agents/*.ez
-*.beam
-
-# Python
-agent_runtime/.venv/
-agent_runtime/__pycache__/
-agent_runtime/src/**/__pycache__/
-agent_runtime/tests/__pycache__/
-agent_runtime/*.egg-info/
-agent_runtime/.mypy_cache/
-agent_runtime/.ruff_cache/
-agent_runtime/.pytest_cache/
-agent_runtime/.coverage
-*.pyc
-*.pyo
-
-# Swift
-WaiAgents/.build/
-WaiAgents/.swiftpm/
-WaiAgents/build/
-*.xcodeproj
-*.xcworkspace
-xcuserdata/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# TypeScript / Node.js
 node_modules/
 dist/
-*.tsbuildinfo
 .turbo/
-coverage/
-
-# Next.js
-.next/
-
-# pnpm
-.pnpm-store/
-
-# Playwright MCP
-.playwright-mcp/
-
-# Environment
+*.tsbuildinfo
 .env
 .env.local
 .env.production
-!.env.example
+.DS_Store

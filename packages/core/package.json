@@ -1,0 +1,33 @@
+{
+  "name": "@wai/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./db": "./src/db/index.ts",
+    "./types": "./src/types/index.ts",
+    "./config": "./src/config/index.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.0",
+    "@sentry/node": "^10.46.0",
+    "drizzle-orm": "^0.39.0",
+    "pgvector": "^0.2.0",
+    "postgres": "^3.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "drizzle-kit": "^0.30.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0"
+  }
+}
