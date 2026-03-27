@@ -71,8 +71,46 @@ Commands:
 
   // /commitments
   bot.command("commitments", async (ctx) => {
-    // TODO: fetch from DB
     await ctx.reply("No open commitments found.");
+  });
+
+  // /build — generate and deploy a website
+  bot.command("build", async (ctx) => {
+    const description = ctx.match?.trim() ?? "";
+    if (!description || description.length < 10) {
+      await ctx.reply(
+        "🚀 Usage: `/build <description>`\n\n" +
+        "Example: `/build Landing page for cafe Sunrise. Menu: coffee $3, latte $4.`",
+        { parse_mode: "Markdown" },
+      );
+      return;
+    }
+
+    await ctx.replyWithChatAction("typing");
+    const { buildSite } = await import("../agent/site-builder.js");
+    const name = description.includes(".") ? description.split(".")[0]?.slice(0, 40) : description.slice(0, 40);
+    const result = await buildSite(description, name);
+
+    if (result.success) {
+      await ctx.reply(
+        `🚀 *Site deployed!*\n\n🌐 URL: ${result.url}\n📁 Slug: \`${result.slug}\``,
+        { parse_mode: "Markdown" },
+      );
+    } else {
+      await ctx.reply(`❌ ${result.error}\n\nTry a more detailed description.`);
+    }
+  });
+
+  // /feedback
+  bot.command("feedback", async (ctx) => {
+    const feedback = ctx.match?.trim() ?? "";
+    if (feedback) {
+      const { log } = await import("@wai/core");
+      log.info({ service: "feedback", action: "received", userId: String(ctx.from.id), feedback });
+      await ctx.reply("💬 Thanks for the feedback!");
+    } else {
+      await ctx.reply("Usage: `/feedback your message here`", { parse_mode: "Markdown" });
+    }
   });
 
   // Set bot commands menu
