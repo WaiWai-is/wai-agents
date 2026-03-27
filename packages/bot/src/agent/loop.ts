@@ -114,13 +114,21 @@ export async function runAgent(opts: {
   let toolCallCount = 0;
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
-    const response = await client.messages.create({
-      model,
-      max_tokens: 4096,
-      system: systemPrompt,
-      messages,
-      tools: TOOLS,
-    });
+    let response: Anthropic.Message;
+    try {
+      response = await client.messages.create({
+        model,
+        max_tokens: 4096,
+        system: systemPrompt,
+        messages,
+        tools: TOOLS,
+      });
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      log.error({ service: "agent", action: "api-error", userId: opts.userId, error: errMsg, turn });
+      captureError(error instanceof Error ? error : new Error(errMsg), { userId: opts.userId, intent, turn: String(turn) });
+      throw error;
+    }
 
     totalInputTokens += response.usage.input_tokens;
     totalOutputTokens += response.usage.output_tokens;

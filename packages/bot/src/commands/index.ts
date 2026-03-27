@@ -3,8 +3,9 @@
  */
 
 import type { Bot } from "grammy";
-import { log } from "@wai/core";
+import { log, captureError } from "@wai/core";
 import { detectLanguage } from "../agent/language.js";
+import { clearHistory } from "../handlers/index.js";
 
 export function setupCommands(bot: Bot) {
   // /start and /help
@@ -66,10 +67,11 @@ Commands:
     );
   });
 
-  // /clear
+  // /clear — actually clears conversation history
   bot.command("clear", async (ctx) => {
-    log.info({ service: "command", action: "clear", userId: String(ctx.from?.id ?? 0) });
-    // TODO: clear conversation history
+    const chatId = ctx.chat.id;
+    log.info({ service: "command", action: "clear", userId: String(ctx.from?.id ?? 0), chatId });
+    clearHistory(chatId);
     await ctx.reply("🗑️ Conversation cleared. Fresh start!");
   });
 
@@ -103,25 +105,32 @@ Commands:
 
     const mode = useAgent ? "agent" : "simple";
     log.info({ service: "command", action: "build", userId, mode, descriptionLength: description.length });
-    await ctx.replyWithChatAction("typing");
-    if (useAgent) {
-      await ctx.reply("🤖 Agent mode: building multi-file site...");
-    }
 
-    const { buildSite } = await import("../agent/site-builder.js");
-    const name = description.includes(".") ? description.split(".")[0]?.slice(0, 40) : description.slice(0, 40);
-    const result = await buildSite(description, name, mode);
+    try {
+      await ctx.replyWithChatAction("typing");
+      if (useAgent) {
+        await ctx.reply("🤖 Agent mode: building multi-file site...");
+      }
 
-    if (result.success) {
-      log.info({ service: "command", action: "build-success", userId, slug: result.slug, url: result.url });
-      const fileInfo = result.fileCount && result.fileCount > 1 ? `\n📂 Files: ${result.fileCount}` : "";
-      await ctx.reply(
-        `🚀 *Site deployed!*\n\n🌐 URL: ${result.url}\n📁 Slug: \`${result.slug}\`${fileInfo}`,
-        { parse_mode: "Markdown" },
-      );
-    } else {
-      log.error({ service: "command", action: "build-failed", userId, error: result.error });
-      await ctx.reply(`❌ ${result.error}\n\nTry a more detailed description.`);
+      const { buildSite } = await import("../agent/site-builder.js");
+      const name = description.includes(".") ? description.split(".")[0]?.slice(0, 40) : description.slice(0, 40);
+      const result = await buildSite(description, name, mode);
+
+      if (result.success) {
+        log.info({ service: "command", action: "build-success", userId, slug: result.slug, url: result.url });
+        const fileInfo = result.fileCount && result.fileCount > 1 ? `\n📂 Files: ${result.fileCount}` : "";
+        await ctx.reply(
+          `🚀 *Site deployed!*\n\n🌐 URL: ${result.url}\n📁 Slug: \`${result.slug}\`${fileInfo}`,
+          { parse_mode: "Markdown" },
+        );
+      } else {
+        log.error({ service: "command", action: "build-failed", userId, error: result.error });
+        await ctx.reply(`❌ ${result.error}\n\nTry a more detailed description.`);
+      }
+    } catch (error) {
+      log.error({ service: "command", action: "build-error", userId, error: String(error) });
+      captureError(error instanceof Error ? error : new Error(String(error)), { userId });
+      await ctx.reply("❌ Failed to build site. Please try again.");
     }
   });
 
@@ -129,7 +138,6 @@ Commands:
   bot.command("feedback", async (ctx) => {
     const feedback = ctx.match?.trim() ?? "";
     if (feedback) {
-      const { log } = await import("@wai/core");
       log.info({ service: "feedback", action: "received", userId: String(ctx.from?.id ?? 0), feedback });
       await ctx.reply("💬 Thanks for the feedback!");
     } else {

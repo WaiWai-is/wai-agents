@@ -8,7 +8,7 @@
 import { Bot, webhookCallback } from "grammy";
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
-import { config, log, initSentry } from "@wai/core";
+import { config, log, initSentry, captureError } from "@wai/core";
 import { setupCommands } from "./commands/index.js";
 import { setupHandlers } from "./handlers/index.js";
 
@@ -22,6 +22,17 @@ log.info({ service: "bot", action: "starting" });
 
 // Create bot
 const bot = new Bot(config.telegramBotToken);
+
+// Global error handler — catches ALL unhandled handler errors
+bot.catch((err) => {
+  const userId = String(err.ctx?.from?.id ?? 0);
+  const errMsg = err.error instanceof Error ? err.error.message : String(err.error);
+  log.error({ service: "bot", action: "unhandled-error", userId, error: errMsg });
+  captureError(err.error instanceof Error ? err.error : new Error(errMsg), { userId, service: "bot" });
+
+  // Try to notify user
+  err.ctx?.reply("⚠️ Something went wrong. Please try again.").catch(() => {});
+});
 
 // Register commands and handlers
 setupCommands(bot);

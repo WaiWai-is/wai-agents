@@ -298,4 +298,50 @@ describe("runAgent", () => {
     expect(lastMsg.content).toContain("Voice text here");
     expect(lastMsg.content).toContain("Extra context");
   });
+
+  // Error handling tests
+  it("throws on API error (rate limit)", async () => {
+    mockCreate.mockRejectedValueOnce(new Error("rate_limit_exceeded"));
+
+    await expect(runAgent({
+      message: "test",
+      userId: "123",
+    })).rejects.toThrow("rate_limit_exceeded");
+  });
+
+  it("throws on API error (auth failure)", async () => {
+    mockCreate.mockRejectedValueOnce(new Error("authentication_error"));
+
+    await expect(runAgent({
+      message: "test",
+      userId: "123",
+    })).rejects.toThrow("authentication_error");
+  });
+
+  it("throws on API error (network timeout)", async () => {
+    mockCreate.mockRejectedValueOnce(new Error("ECONNREFUSED"));
+
+    await expect(runAgent({
+      message: "test",
+      userId: "123",
+    })).rejects.toThrow("ECONNREFUSED");
+  });
+
+  it("throws on API error mid-loop (after tool use)", async () => {
+    // First call succeeds with tool use
+    mockCreate.mockResolvedValueOnce(
+      makeToolUseResponse([{
+        name: "search_messages",
+        id: "tool_1",
+        input: { query: "test" },
+      }]),
+    );
+    // Second call fails
+    mockCreate.mockRejectedValueOnce(new Error("internal_server_error"));
+
+    await expect(runAgent({
+      message: "search test",
+      userId: "123",
+    })).rejects.toThrow("internal_server_error");
+  });
 });
