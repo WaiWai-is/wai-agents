@@ -480,6 +480,121 @@ Requirements:
   }
 }
 
+/**
+ * In-memory store of last generated site per user.
+ * Key = userId, Value = { slug, html, description }
+ */
+const siteStore = new Map<string, { slug: string; html: string; description: string }>();
+
+/** Store a generated site for future edits. */
+export function storeSite(userId: string, slug: string, html: string, description: string) {
+  siteStore.set(userId, { slug, html, description });
+  log.info({ service: "site-builder", action: "site-stored", userId, slug });
+}
+
+/** Retrieve a user's last generated site. */
+export function getStoredSite(userId: string): { slug: string; html: string; description: string } | undefined {
+  return siteStore.get(userId);
+}
+
+/** Clear a user's stored site. */
+export function clearStoredSite(userId: string) {
+  siteStore.delete(userId);
+}
+
+const EDIT_PROMPT = `You are editing an existing website. Apply the user's requested change to the HTML below.
+
+## Current HTML
+{currentHtml}
+
+## User's Edit Request
+{editRequest}
+
+## Rules
+- Apply ONLY the requested change — do NOT rewrite unrelated sections
+- Keep all existing content, structure, styling, and JavaScript intact
+- If the change affects colors/theme, update ALL related elements consistently
+- If adding a new section, place it in the logical position
+- Preserve the Tailwind CSS classes, Alpine.js directives, and Lucide icons
+- Return the COMPLETE updated HTML starting with <!DOCTYPE html>
+- No markdown wrapping, no explanation — ONLY the HTML`;
+
+/**
+ * Edit an existing site by applying a change request.
+ * Uses the diffs approach — Claude sees existing HTML and applies targeted changes.
+ */
+export async function editSite(
+  currentHtml: string,
+  editRequest: string,
+  onProgress?: ProgressCallback,
+): Promise<string | null> {
+  const client = new Anthropic({ apiKey: config.anthropicApiKey });
+
+  log.info({ service: "site-builder", action: "editing", editRequest: editRequest.slice(0, 100), htmlSize: currentHtml.length });
+  await onProgress?.("editing", `Applying: "${editRequest.slice(0, 60)}${editRequest.length > 60 ? "..." : ""}"...`);
+
+  // Truncate HTML if extremely large to fit context
+  const maxHtmlSize = 60000;
+  const htmlForPrompt = currentHtml.length > maxHtmlSize
+    ? currentHtml.slice(0, maxHtmlSize) + "\n<!-- ... truncated for context -->"
+    : currentHtml;
+
+  const prompt = EDIT_PROMPT
+    .replace("{currentHtml}", htmlForPrompt)
+    .replace("{editRequest}", editRequest);
+
+  const response = await client.messages.create({
+    model: "claude-haiku-4-5",
+    max_tokens: 16000,
+    messages: [{ role: "user", content: prompt }],
+  });
+
+  const raw = response.content[0]?.type === "text" ? response.content[0].text : "";
+  const html = cleanHtmlOutput(raw);
+
+  if (html) {
+    log.info({ service: "site-builder", action: "edited", newHtmlSize: html.length });
+  } else {
+    log.warn({ service: "site-builder", action: "edit-failed", rawLength: raw.length });
+  }
+
+  return html;
+}
+
+/**
+ * Edit and redeploy a site — the edit entry point.
+ *
+ * Flow: Retrieve stored site → Edit HTML → Deploy
+ */
+export async function editAndDeploySite(
+  userId: string,
+  editRequest: string,
+  onProgress?: ProgressCallback,
+): Promise<BuildSiteResult> {
+  const stored = getStoredSite(userId);
+  if (!stored) {
+    return { success: false, error: "No site to edit. Use /build first to create one." };
+  }
+
+  await onProgress?.("editing", `Editing ${stored.slug}.wai.computer...`);
+
+  const updatedHtml = await editSite(stored.html, editRequest, onProgress);
+  if (!updatedHtml) {
+    return { success: false, slug: stored.slug, error: "Failed to apply edit" };
+  }
+
+  // Deploy updated version
+  await onProgress?.("deploying", `Redeploying ${stored.slug}.wai.computer...`);
+  const result = await deployToCloudflare(stored.slug, updatedHtml);
+
+  if (result.success) {
+    // Update stored site with new HTML
+    storeSite(userId, stored.slug, updatedHtml, stored.description);
+  }
+
+  return { ...result, slug: stored.slug, fileCount: 1 };
+}
+
 /** Result of buildSite with plan details. */
 export interface BuildSiteResult {
   success: boolean;
@@ -493,7 +608,7 @@ export interface BuildSiteResult {
 /**
  * Build and deploy a site — the main entry point.
  *
- * Flow: Plan → Generate (with retry) → Deploy
+ * Flow: Plan → Generate (with retry) → Deploy → Store for edits
  * Uses simple mode by default, agent mode for complex descriptions.
  */
 export async function buildSite(
@@ -501,6 +616,7 @@ export async function buildSite(
   name?: string,
   mode: "simple" | "agent" = "simple",
   onProgress?: ProgressCallback,
+  userId?: string,
 ): Promise<BuildSiteResult> {
   const slug = generateSlug(name ?? description.split(".")[0] ?? description.slice(0, 30));
 
@@ -523,5 +639,11 @@ export async function buildSite(
   // Step 3: Deploy
   await onProgress?.("deploying", `Deploying to ${slug}.wai.computer...`);
   const result = await deployToCloudflare(slug, html);
+
+  // Step 4: Store for future edits
+  if (result.success && userId) {
+    storeSite(userId, slug, html, description);
+  }
+
   return { ...result, slug, fileCount: 1, plan };
 }

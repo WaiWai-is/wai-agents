@@ -134,7 +134,7 @@ Commands:
 
       const { buildSite } = await import("../agent/site-builder.js");
       const name = description.includes(".") ? description.split(".")[0]?.slice(0, 40) : description.slice(0, 40);
-      const result = await buildSite(description, name, mode, onProgress);
+      const result = await buildSite(description, name, mode, onProgress, userId);
 
       if (result.success) {
         log.info({ service: "command", action: "build-success", userId, slug: result.slug, url: result.url });
@@ -177,6 +177,79 @@ Commands:
     }
   });
 
+  // /edit — modify the last built site
+  bot.command("edit", async (ctx) => {
+    const userId = String(ctx.from?.id ?? 0);
+    const editRequest = ctx.match?.trim() ?? "";
+
+    if (!editRequest) {
+      await ctx.reply(
+        "✏️ Usage: `/edit <what to change>`\n\n" +
+        "Examples:\n" +
+        "• `/edit Change the color scheme to dark blue`\n" +
+        "• `/edit Add a testimonials section with 3 reviews`\n" +
+        "• `/edit Make the hero section bigger with a gradient`\n" +
+        "• `/edit Translate everything to Russian`",
+        { parse_mode: "Markdown" },
+      );
+      return;
+    }
+
+    log.info({ service: "command", action: "edit", userId, editLength: editRequest.length });
+
+    try {
+      const progressMsg = await ctx.reply("✏️ *Editing your site...*\n\n⏳ Applying changes...", {
+        parse_mode: "Markdown",
+      });
+
+      const stageIcons: Record<string, string> = {
+        editing: "✏️", deploying: "🚀",
+      };
+      const onProgress = async (stage: string, detail: string) => {
+        const icon = stageIcons[stage] ?? "⏳";
+        try {
+          await ctx.api.editMessageText(
+            ctx.chat.id,
+            progressMsg.message_id,
+            `✏️ *Editing your site...*\n\n${icon} ${detail}`,
+            { parse_mode: "Markdown" },
+          );
+        } catch { /* ignore edit failures */ }
+      };
+
+      const { editAndDeploySite } = await import("../agent/site-builder.js");
+      const result = await editAndDeploySite(userId, editRequest, onProgress);
+
+      if (result.success) {
+        log.info({ service: "command", action: "edit-success", userId, slug: result.slug });
+        try {
+          await ctx.api.editMessageText(
+            ctx.chat.id,
+            progressMsg.message_id,
+            `✅ *Site updated!*\n\n🌐 URL: ${result.url}\n✏️ Change: "${editRequest.slice(0, 80)}"`,
+            { parse_mode: "Markdown" },
+          );
+        } catch {
+          await ctx.reply(
+            `✅ *Site updated!*\n\n🌐 URL: ${result.url}\n✏️ Change: "${editRequest.slice(0, 80)}"`,
+            { parse_mode: "Markdown" },
+          );
+        }
+      } else {
+        log.error({ service: "command", action: "edit-failed", userId, error: result.error });
+        try {
+          await ctx.api.editMessageText(ctx.chat.id, progressMsg.message_id, `❌ ${result.error}`);
+        } catch {
+          await ctx.reply(`❌ ${result.error}`);
+        }
+      }
+    } catch (error) {
+      log.error({ service: "command", action: "edit-error", userId, error: String(error) });
+      captureError(error instanceof Error ? error : new Error(String(error)), { userId });
+      await ctx.reply("❌ Failed to edit site. Please try again.");
+    }
+  });
+
   // /feedback
   bot.command("feedback", async (ctx) => {
     const feedback = ctx.match?.trim() ?? "";
@@ -194,6 +267,7 @@ Commands:
     { command: "help", description: "Show commands" },
     { command: "search", description: "Search messages by meaning" },
     { command: "build", description: "Create & publish a website" },
+    { command: "edit", description: "Edit the last built site" },
     { command: "digest", description: "Daily activity digest" },
     { command: "commitments", description: "Track promises" },
     { command: "briefing", description: "Morning briefing" },
