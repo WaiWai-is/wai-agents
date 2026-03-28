@@ -446,6 +446,47 @@ Commands:
     await ctx.reply(formatSubmissionsSummary(stored.slug), { parse_mode: "Markdown" });
   });
 
+  // /export — download site as ZIP
+  bot.command("export", async (ctx) => {
+    const userId = String(ctx.from?.id ?? 0);
+    log.info({ service: "command", action: "export", userId });
+
+    const { getStoredSite } = await import("../agent/site-builder.js");
+    const stored = getStoredSite(userId);
+
+    if (!stored) {
+      await ctx.reply("📦 No site to export. Use /build first.");
+      return;
+    }
+
+    try {
+      await ctx.reply("📦 Packaging your site...");
+      await ctx.replyWithChatAction("upload_document");
+
+      const { exportSiteAsZip, formatFileSize, cleanupExport } = await import("../agent/export.js");
+      const result = await exportSiteAsZip(stored.slug, stored.html, stored.description);
+
+      if (result.success && result.filePath) {
+        const { InputFile } = await import("grammy");
+        const sizeStr = formatFileSize(result.fileSize ?? 0);
+
+        await ctx.replyWithDocument(new InputFile(result.filePath, result.fileName), {
+          caption: `📦 *${stored.slug}* (${sizeStr})\n\nReady to deploy anywhere!\nIncludes: index.html + README.md`,
+          parse_mode: "Markdown",
+        });
+
+        log.info({ service: "command", action: "export-success", userId, slug: stored.slug, size: result.fileSize });
+        await cleanupExport(result.filePath);
+      } else {
+        await ctx.reply(`❌ Export failed: ${result.error}`);
+      }
+    } catch (error) {
+      log.error({ service: "command", action: "export-error", userId, error: String(error) });
+      captureError(error instanceof Error ? error : new Error(String(error)), { userId });
+      await ctx.reply("❌ Failed to export site.");
+    }
+  });
+
   // /feedback
   bot.command("feedback", async (ctx) => {
     const feedback = ctx.match?.trim() ?? "";
@@ -469,6 +510,7 @@ Commands:
     { command: "history", description: "Site version history" },
     { command: "stats", description: "Site visitor analytics" },
     { command: "submissions", description: "View form submissions" },
+    { command: "export", description: "Download site as ZIP" },
     { command: "templates", description: "Browse site templates" },
     { command: "memory", description: "What I remember about you" },
     { command: "status", description: "Stats & health" },
