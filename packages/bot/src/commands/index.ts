@@ -189,25 +189,46 @@ Commands:
 
       if (result.success) {
         log.info({ service: "command", action: "build-success", userId, slug: result.slug, url: result.url });
+
+        // Generate preview with metadata
+        const { generatePreview } = await import("../agent/screenshot.js");
+        const { getStoredSite } = await import("../agent/site-builder.js");
+        const stored = getStoredSite(userId);
+        const preview = stored
+          ? generatePreview(result.url!, result.slug!, stored.html)
+          : undefined;
+
+        // Build result message
         const fileInfo = result.fileCount && result.fileCount > 1 ? `\n📂 Files: ${result.fileCount}` : "";
         const planInfo = result.plan
           ? `\n📐 Sections: ${result.plan.sections.length} | Interactive: ${result.plan.interactiveElements.length}`
           : "";
 
         // Update progress message with final result
+        const successText = `🚀 *Site deployed\\!*\n\n🌐 URL: ${result.url}\n📁 Slug: \`${result.slug}\`${fileInfo}${planInfo}`;
         try {
           await ctx.api.editMessageText(
             ctx.chat.id,
             progressMsg.message_id,
-            `🚀 *Site deployed!*\n\n🌐 URL: ${result.url}\n📁 Slug: \`${result.slug}\`${fileInfo}${planInfo}`,
-            { parse_mode: "Markdown" },
+            successText.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, "\\$1"),
+            { parse_mode: "MarkdownV2" },
           );
         } catch {
-          // Fallback: send new message
-          await ctx.reply(
-            `🚀 *Site deployed!*\n\n🌐 URL: ${result.url}\n📁 Slug: \`${result.slug}\`${fileInfo}${planInfo}`,
-            { parse_mode: "Markdown" },
-          );
+          try {
+            await ctx.api.editMessageText(ctx.chat.id, progressMsg.message_id,
+              `🚀 Site deployed!\n\n🌐 URL: ${result.url}\n📁 Slug: ${result.slug}${fileInfo}${planInfo}`);
+          } catch { /* ignore */ }
+        }
+
+        // Send rich text preview with site metadata
+        if (preview) {
+          try {
+            await ctx.reply(preview.textPreview, { parse_mode: "MarkdownV2" });
+          } catch {
+            // Fallback: plain text preview
+            const plain = `${preview.meta.title}\n${preview.meta.description}\n${preview.meta.sections.slice(0, 3).join(" → ")}\n\n${result.url}`;
+            await ctx.reply(plain);
+          }
         }
       } else {
         log.error({ service: "command", action: "build-failed", userId, error: result.error });
