@@ -968,6 +968,7 @@ export interface BuildSiteResult {
   error?: string;
   fileCount?: number;
   plan?: SitePlan;
+  quality?: import("./validator.js").QualityReport;
 }
 
 /**
@@ -1041,22 +1042,28 @@ export async function buildSite(
     return { success: false, slug, error: "Failed to generate HTML after 2 attempts", plan };
   }
 
-  // Step 4: Inject SEO + analytics + form handler
+  // Step 4: Validate quality
+  const { validateSiteQuality } = await import("./validator.js");
+  const quality = validateSiteQuality(html);
+  await onProgress?.("validated", `Quality: ${quality.score}/100 ${quality.passed ? "✅" : "⚠️"}`);
+  log.info({ service: "site-builder", action: "quality-check", slug, score: quality.score, issues: quality.issues.length });
+
+  // Step 5: Inject SEO + analytics + form handler
   const { injectSeoTags } = await import("./seo.js");
   html = injectSeoTags(html, slug, description);
   html = injectAnalytics(html, slug);
   html = injectFormHandler(html, slug);
 
-  // Step 5: Deploy
+  // Step 6: Deploy
   await onProgress?.("deploying", `Deploying to ${slug}.wai.computer...`);
   const result = await deployToCloudflare(slug, html);
 
-  // Step 6: Store version + register owner for form notifications
+  // Step 7: Store version + register owner for form notifications
   if (result.success && userId) {
     storeSite(userId, slug, html, description, "build", description.slice(0, 100));
     const { registerSiteOwner } = await import("./forms.js");
     registerSiteOwner(slug, userId);
   }
 
-  return { ...result, slug, fileCount: 1, plan };
+  return { ...result, slug, fileCount: 1, plan, quality };
 }

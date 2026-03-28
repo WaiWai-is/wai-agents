@@ -165,7 +165,7 @@ Commands:
 
       // Progress callback — edits the message in real-time
       const stageIcons: Record<string, string> = {
-        planning: "📋", planned: "✅", generating: "⚡", retrying: "🔄", deploying: "🚀",
+        planning: "📋", planned: "✅", generating: "⚡", retrying: "🔄", validated: "✅", deploying: "🚀",
       };
       const onProgress = async (stage: string, detail: string) => {
         const icon = stageIcons[stage] ?? "⏳";
