@@ -84,6 +84,224 @@ Your sites rival those built by Lovable.dev and Vercel's v0 — stunning, intera
 Respond with ONLY the HTML code. No markdown, no explanation, no \`\`\` blocks.`;
 
 /**
+ * MULTIPAGE_PROMPT — for sites with multiple pages and SPA routing.
+ *
+ * Uses Alpine.js hash-based routing: all pages in one HTML file,
+ * navigation shows/hides page sections with smooth transitions.
+ * Works as a static file on Cloudflare Pages — no server needed.
+ */
+const MULTIPAGE_PROMPT = `You are an elite frontend developer creating a MULTI-PAGE website as a Single Page Application.
+
+## Project: {description}
+
+## Pages to create: {pages}
+
+## Tech Stack (MANDATORY)
+- Tailwind CSS via CDN: <script src="https://cdn.tailwindcss.com"></script>
+- Google Fonts: Inter for body, plus one accent font
+- Lucide Icons: <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+- Alpine.js: <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js"></script>
+
+## SPA Routing Architecture (CRITICAL — follow exactly)
+
+Use Alpine.js with hash-based routing. The navigation and page switching MUST work like this:
+
+\`\`\`html
+<body x-data="{ currentPage: window.location.hash.slice(1) || 'home' }"
+      @hashchange.window="currentPage = window.location.hash.slice(1) || 'home'">
+
+  <!-- Navigation (visible on all pages) -->
+  <nav>
+    <a href="#home" :class="currentPage === 'home' && 'text-primary-600 font-bold'">Home</a>
+    <a href="#about" :class="currentPage === 'about' && 'text-primary-600 font-bold'">About</a>
+    <a href="#services" :class="currentPage === 'services' && 'text-primary-600 font-bold'">Services</a>
+    <a href="#contact" :class="currentPage === 'contact' && 'text-primary-600 font-bold'">Contact</a>
+  </nav>
+
+  <!-- Page: Home -->
+  <main x-show="currentPage === 'home'" x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0">
+    <!-- Full page content here -->
+  </main>
+
+  <!-- Page: About -->
+  <main x-show="currentPage === 'about'" x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0">
+    <!-- Full page content here -->
+  </main>
+
+  <!-- Shared footer (visible on all pages) -->
+  <footer>...</footer>
+</body>
+\`\`\`
+
+## Design System
+- Same as single-page: cohesive color palette, Inter typography, generous spacing
+- Navigation: sticky top bar with active page highlighting
+- Page transitions: fade-in with slight upward slide (300ms)
+- Mobile: hamburger menu that works across all pages
+- Dark mode toggle that persists across page changes (use Alpine.js store)
+
+## Each Page Must Have
+- Full, rich content (NOT placeholder — realistic text, images, data)
+- Proper heading hierarchy starting with h1
+- At least 3-4 sections with varied layouts
+- Responsive design (mobile + desktop)
+- Scroll-to-top when changing pages
+
+## Navigation Requirements
+- Sticky/fixed navigation visible on ALL pages
+- Active page link highlighted (different color/weight)
+- Mobile hamburger menu with smooth slide-in
+- Logo/brand name links to #home
+- Smooth page transitions (Alpine.js x-transition)
+- Hash-based routing (#home, #about, #services, #contact)
+- Default to #home when no hash
+
+## Output Rules
+- Single HTML file — ALL pages within one file using x-show routing
+- Start with <!DOCTYPE html>
+- No markdown wrapping, no explanation
+- Generate REAL content for each page
+- Footer with "Made with Wai ✨" visible on all pages
+
+Respond with ONLY the HTML code. No markdown, no explanation.`;
+
+/** Page definitions for multi-page sites. */
+export interface PageDefinition {
+  id: string;
+  title: string;
+  description: string;
+}
+
+/**
+ * Detect if a description implies a multi-page site.
+ * Returns page definitions if multi-page, undefined if single-page.
+ */
+export function detectMultiPage(description: string): PageDefinition[] | undefined {
+  const lower = description.toLowerCase();
+
+  // Explicit multi-page indicators
+  const multiPagePatterns = [
+    /(\d+)\s*(?:pages?|страниц|стр)/i,
+    /multi[- ]?page/i,
+    /многостраничн/i,
+    /несколько\s*страниц/i,
+    /pages?:\s*(.+)/i,
+    /страницы?:\s*(.+)/i,
+  ];
+
+  let isMultiPage = multiPagePatterns.some((p) => p.test(description));
+
+  // Also detect implicit multi-page from listing page names
+  const pageKeywords = [
+    { id: "home", keywords: ["home", "главная", "main"] },
+    { id: "about", keywords: ["about", "о нас", "о компании", "about us"] },
+    { id: "services", keywords: ["services", "услуги", "сервисы"] },
+    { id: "portfolio", keywords: ["portfolio", "портфолио", "работы", "projects", "проекты"] },
+    { id: "contact", keywords: ["contact", "контакты", "связь", "contact us"] },
+    { id: "pricing", keywords: ["pricing", "цены", "тарифы", "prices"] },
+    { id: "blog", keywords: ["blog", "блог", "news", "новости"] },
+    { id: "team", keywords: ["team", "команда", "наша команда"] },
+    { id: "faq", keywords: ["faq", "вопросы", "чаво"] },
+    { id: "gallery", keywords: ["gallery", "галерея", "фото"] },
+  ];
+
+  const matchedPages: PageDefinition[] = [];
+  for (const page of pageKeywords) {
+    if (page.keywords.some((kw) => lower.includes(kw))) {
+      matchedPages.push({
+        id: page.id,
+        title: page.id.charAt(0).toUpperCase() + page.id.slice(1),
+        description: `${page.id} page`,
+      });
+    }
+  }
+
+  // If 3+ page-like keywords detected, treat as multi-page
+  if (matchedPages.length >= 3) {
+    isMultiPage = true;
+  }
+
+  if (!isMultiPage) return undefined;
+
+  // If we detected pages from keywords, use them
+  if (matchedPages.length >= 2) {
+    // Ensure "home" is always first
+    if (!matchedPages.some((p) => p.id === "home")) {
+      matchedPages.unshift({ id: "home", title: "Home", description: "home page" });
+    }
+    log.info({ service: "site-builder", action: "multipage-detected", pageCount: matchedPages.length, pages: matchedPages.map((p) => p.id).join(",") });
+    return matchedPages;
+  }
+
+  // Default pages for generic multi-page request
+  log.info({ service: "site-builder", action: "multipage-default" });
+  return [
+    { id: "home", title: "Home", description: "Landing/hero page" },
+    { id: "about", title: "About", description: "About page" },
+    { id: "services", title: "Services", description: "Services/features page" },
+    { id: "contact", title: "Contact", description: "Contact page with form" },
+  ];
+}
+
+/**
+ * Generate a multi-page SPA HTML file.
+ */
+export async function generateMultiPageHtml(
+  description: string,
+  pages: PageDefinition[],
+  plan?: SitePlan,
+  onProgress?: ProgressCallback,
+  extraHints?: string,
+  memoryContext?: string,
+): Promise<string | null> {
+  const client = new Anthropic({ apiKey: config.anthropicApiKey });
+
+  const pagesStr = pages.map((p) => `- ${p.title} (#${p.id}): ${p.description}`).join("\n");
+
+  log.info({ service: "site-builder", action: "generating-multipage", pageCount: pages.length });
+
+  let prompt = MULTIPAGE_PROMPT
+    .replace("{description}", description.slice(0, 3000))
+    .replace("{pages}", pagesStr);
+
+  if (memoryContext) {
+    prompt += `\n\n${memoryContext}\n\nApply these preferences to ALL pages.`;
+  }
+
+  if (plan) {
+    prompt += `\n\n## Design Direction
+- Color scheme: ${plan.colorScheme}
+- Typography: ${plan.typography}
+- Interactive: ${plan.interactiveElements.join(", ")}`;
+  }
+
+  if (extraHints) {
+    prompt += `\n\n## Additional Requirements\n${extraHints}`;
+  }
+
+  await onProgress?.("generating", `Creating ${pages.length}-page SPA with routing...`);
+
+  const response = await client.messages.create({
+    model: "claude-haiku-4-5",
+    max_tokens: 32000, // Multi-page needs more tokens
+    messages: [{ role: "user", content: prompt }],
+  });
+
+  const raw = response.content[0]?.type === "text" ? response.content[0].text : "";
+  const html = cleanHtmlOutput(raw);
+
+  if (html) {
+    log.info({ service: "site-builder", action: "multipage-generated", htmlSize: html.length, pages: pages.length });
+  } else {
+    log.warn({ service: "site-builder", action: "multipage-failed", rawLength: raw.length });
+  }
+
+  return html;
+}
+
+/**
  * Generate a URL-safe slug from a name.
  */
 export function generateSlug(name: string): string {
@@ -673,8 +891,23 @@ export async function buildSite(
     extractMemoriesFromBuild(userId, description, slug);
   }
 
-  // Step 3: Generate HTML with retry on failure
-  const html = await generateSiteHtmlWithRetry(description, plan, onProgress, extraPromptHints, memoryContext);
+  // Step 3: Check if multi-page site requested
+  const pages = detectMultiPage(description);
+  let html: string | null;
+
+  if (pages) {
+    await onProgress?.("generating", `Creating ${pages.length}-page SPA: ${pages.map((p) => p.title).join(", ")}...`);
+    html = await generateMultiPageHtml(description, pages, plan, onProgress, extraPromptHints, memoryContext);
+    // Retry with single-page if multi-page fails
+    if (!html) {
+      log.warn({ service: "site-builder", action: "multipage-retry-single", slug });
+      await onProgress?.("retrying", "Multi-page generation failed, creating single-page version...");
+      html = await generateSiteHtmlWithRetry(description, plan, onProgress, extraPromptHints, memoryContext);
+    }
+  } else {
+    html = await generateSiteHtmlWithRetry(description, plan, onProgress, extraPromptHints, memoryContext);
+  }
+
   if (!html) {
     return { success: false, slug, error: "Failed to generate HTML after 2 attempts", plan };
   }
