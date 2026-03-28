@@ -322,6 +322,95 @@ Commands:
     }
   });
 
+  // /undo — revert to previous site version
+  bot.command("undo", async (ctx) => {
+    const userId = String(ctx.from?.id ?? 0);
+    log.info({ service: "command", action: "undo", userId });
+
+    const { undoSite, getSiteHistory } = await import("../agent/site-builder.js");
+    const version = undoSite(userId);
+
+    if (!version) {
+      await ctx.reply("⚠️ Nothing to undo. This is the first version.");
+      return;
+    }
+
+    // Redeploy the previous version
+    const { deployToCloudflare } = await import("../agent/site-builder.js");
+    const result = await deployToCloudflare(version.slug, version.html);
+    const history = getSiteHistory(userId);
+
+    if (result.success) {
+      await ctx.reply(
+        `⏪ *Reverted to version ${history.current}/${history.total}*\n\n` +
+        `🌐 ${result.url}\n` +
+        `📋 ${version.action}: ${version.actionDetail ?? "initial build"}\n\n` +
+        `_/redo to go forward, /history for all versions_`,
+        { parse_mode: "Markdown" },
+      );
+    } else {
+      await ctx.reply(`❌ Failed to redeploy: ${result.error}`);
+    }
+  });
+
+  // /redo — go forward to next site version
+  bot.command("redo", async (ctx) => {
+    const userId = String(ctx.from?.id ?? 0);
+    log.info({ service: "command", action: "redo", userId });
+
+    const { redoSite, getSiteHistory } = await import("../agent/site-builder.js");
+    const version = redoSite(userId);
+
+    if (!version) {
+      await ctx.reply("⚠️ Nothing to redo. This is the latest version.");
+      return;
+    }
+
+    const { deployToCloudflare } = await import("../agent/site-builder.js");
+    const result = await deployToCloudflare(version.slug, version.html);
+    const history = getSiteHistory(userId);
+
+    if (result.success) {
+      await ctx.reply(
+        `⏩ *Restored version ${history.current}/${history.total}*\n\n` +
+        `🌐 ${result.url}\n` +
+        `📋 ${version.action}: ${version.actionDetail ?? "initial build"}`,
+        { parse_mode: "Markdown" },
+      );
+    } else {
+      await ctx.reply(`❌ Failed to redeploy: ${result.error}`);
+    }
+  });
+
+  // /history — show site version history
+  bot.command("history", async (ctx) => {
+    const userId = String(ctx.from?.id ?? 0);
+    log.info({ service: "command", action: "history", userId });
+
+    const { getSiteHistory } = await import("../agent/site-builder.js");
+    const history = getSiteHistory(userId);
+
+    if (history.total === 0) {
+      await ctx.reply("📜 No site history. Use /build to create a site first.");
+      return;
+    }
+
+    const lines: string[] = [`📜 *Site History* (version ${history.current}/${history.total})\n`];
+
+    for (let i = 0; i < history.versions.length; i++) {
+      const v = history.versions[i];
+      const marker = i === history.current - 1 ? "→ " : "  ";
+      const icon = v.action === "build" ? "🔨" : "✏️";
+      lines.push(`${marker}${icon} v${i + 1}: ${v.actionDetail ?? v.action}`);
+    }
+
+    lines.push("");
+    if (history.canUndo) lines.push("⏪ /undo — revert to previous");
+    if (history.canRedo) lines.push("⏩ /redo — go forward");
+
+    await ctx.reply(lines.join("\n"), { parse_mode: "Markdown" });
+  });
+
   // /feedback
   bot.command("feedback", async (ctx) => {
     const feedback = ctx.match?.trim() ?? "";
@@ -340,10 +429,11 @@ Commands:
     { command: "search", description: "Search messages by meaning" },
     { command: "build", description: "Create & publish a website" },
     { command: "edit", description: "Edit the last built site" },
+    { command: "undo", description: "Revert to previous version" },
+    { command: "redo", description: "Restore next version" },
+    { command: "history", description: "Site version history" },
     { command: "templates", description: "Browse site templates" },
-    { command: "digest", description: "Daily activity digest" },
-    { command: "commitments", description: "Track promises" },
-    { command: "briefing", description: "Morning briefing" },
+    { command: "memory", description: "What I remember about you" },
     { command: "status", description: "Stats & health" },
     { command: "clear", description: "Reset conversation" },
     { command: "feedback", description: "Send feedback" },

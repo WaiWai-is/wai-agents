@@ -712,26 +712,119 @@ Requirements:
   }
 }
 
+/** A single version of a site. */
+export interface SiteVersion {
+  slug: string;
+  html: string;
+  description: string;
+  action: "build" | "edit";
+  actionDetail?: string;
+  createdAt: Date;
+}
+
+/** Per-user site history. */
+interface UserSiteHistory {
+  versions: SiteVersion[];
+  currentIndex: number;
+}
+
+const MAX_VERSIONS = 20;
+
 /**
- * In-memory store of last generated site per user.
- * Key = userId, Value = { slug, html, description }
+ * In-memory site version history per user.
+ * Supports undo/redo by navigating version index.
  */
-const siteStore = new Map<string, { slug: string; html: string; description: string }>();
+const siteHistoryStore = new Map<string, UserSiteHistory>();
 
-/** Store a generated site for future edits. */
-export function storeSite(userId: string, slug: string, html: string, description: string) {
-  siteStore.set(userId, { slug, html, description });
-  log.info({ service: "site-builder", action: "site-stored", userId, slug });
+function ensureHistory(userId: string): UserSiteHistory {
+  if (!siteHistoryStore.has(userId)) {
+    siteHistoryStore.set(userId, { versions: [], currentIndex: -1 });
+  }
+  return siteHistoryStore.get(userId)!;
 }
 
-/** Retrieve a user's last generated site. */
+/** Store a new version (from build or edit). Trims future versions if undo was used. */
+export function storeSite(userId: string, slug: string, html: string, description: string, action: "build" | "edit" = "build", actionDetail?: string) {
+  const history = ensureHistory(userId);
+
+  // If we undid and then make a new change, discard future versions
+  if (history.currentIndex < history.versions.length - 1) {
+    history.versions = history.versions.slice(0, history.currentIndex + 1);
+  }
+
+  history.versions.push({
+    slug, html, description, action,
+    actionDetail,
+    createdAt: new Date(),
+  });
+
+  // Limit history size
+  if (history.versions.length > MAX_VERSIONS) {
+    history.versions.shift();
+  }
+
+  history.currentIndex = history.versions.length - 1;
+  log.info({ service: "site-builder", action: "version-stored", userId, slug, version: history.currentIndex + 1, total: history.versions.length });
+}
+
+/** Retrieve the current version of a user's site. */
 export function getStoredSite(userId: string): { slug: string; html: string; description: string } | undefined {
-  return siteStore.get(userId);
+  const history = siteHistoryStore.get(userId);
+  if (!history || history.currentIndex < 0) return undefined;
+  return history.versions[history.currentIndex];
 }
 
-/** Clear a user's stored site. */
+/** Clear all site history for a user. */
 export function clearStoredSite(userId: string) {
-  siteStore.delete(userId);
+  siteHistoryStore.delete(userId);
+}
+
+/** Undo: go back one version. Returns the restored version or undefined if at start. */
+export function undoSite(userId: string): SiteVersion | undefined {
+  const history = siteHistoryStore.get(userId);
+  if (!history || history.currentIndex <= 0) return undefined;
+
+  history.currentIndex--;
+  const version = history.versions[history.currentIndex];
+  log.info({ service: "site-builder", action: "undo", userId, version: history.currentIndex + 1, total: history.versions.length });
+  return version;
+}
+
+/** Redo: go forward one version. Returns the restored version or undefined if at end. */
+export function redoSite(userId: string): SiteVersion | undefined {
+  const history = siteHistoryStore.get(userId);
+  if (!history || history.currentIndex >= history.versions.length - 1) return undefined;
+
+  history.currentIndex++;
+  const version = history.versions[history.currentIndex];
+  log.info({ service: "site-builder", action: "redo", userId, version: history.currentIndex + 1, total: history.versions.length });
+  return version;
+}
+
+/** Get version history info for a user. */
+export function getSiteHistory(userId: string): {
+  total: number;
+  current: number;
+  canUndo: boolean;
+  canRedo: boolean;
+  versions: Array<{ action: string; actionDetail?: string; createdAt: Date }>;
+} {
+  const history = siteHistoryStore.get(userId);
+  if (!history || history.versions.length === 0) {
+    return { total: 0, current: 0, canUndo: false, canRedo: false, versions: [] };
+  }
+
+  return {
+    total: history.versions.length,
+    current: history.currentIndex + 1,
+    canUndo: history.currentIndex > 0,
+    canRedo: history.currentIndex < history.versions.length - 1,
+    versions: history.versions.map((v) => ({
+      action: v.action,
+      actionDetail: v.actionDetail,
+      createdAt: v.createdAt,
+    })),
+  };
 }
 
 const EDIT_PROMPT = `You are editing an existing website. Apply the user's requested change to the HTML below.
@@ -824,8 +917,8 @@ export async function editAndDeploySite(
   const result = await deployToCloudflare(stored.slug, updatedHtml);
 
   if (result.success) {
-    // Update stored site with new HTML
-    storeSite(userId, stored.slug, updatedHtml, stored.description);
+    // Store as new version with edit details
+    storeSite(userId, stored.slug, updatedHtml, stored.description, "edit", editRequest.slice(0, 100));
   }
 
   return { ...result, slug: stored.slug, fileCount: 1 };
@@ -916,9 +1009,9 @@ export async function buildSite(
   await onProgress?.("deploying", `Deploying to ${slug}.wai.computer...`);
   const result = await deployToCloudflare(slug, html);
 
-  // Step 5: Store for future edits
+  // Step 5: Store as version 1 for future edits + undo
   if (result.success && userId) {
-    storeSite(userId, slug, html, description);
+    storeSite(userId, slug, html, description, "build", description.slice(0, 100));
   }
 
   return { ...result, slug, fileCount: 1, plan };
