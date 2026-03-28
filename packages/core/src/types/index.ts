@@ -9,6 +9,7 @@ export type Intent =
   | "digest"
   | "action"
   | "build"
+  | "site_edit"
   | "coach"
   | "chat";
 

@@ -117,7 +117,48 @@ export function setupHandlers(bot: Bot) {
     await ctx.replyWithChatAction("typing");
 
     try {
-      // Get conversation history for this chat
+      // Check if this is a site edit intent (user has a stored site)
+      const { isSiteEditIntent } = await import("../agent/router.js");
+      const { getStoredSite, editAndDeploySite } = await import("../agent/site-builder.js");
+
+      if (isSiteEditIntent(text) && getStoredSite(userId)) {
+        log.info({ service: "handler", action: "auto-edit-detected", userId, text: text.slice(0, 60) });
+
+        const progressMsg = await ctx.reply("✏️ *Editing your site...*", { parse_mode: "Markdown" });
+
+        const onProgress = async (stage: string, detail: string) => {
+          try {
+            await ctx.api.editMessageText(ctx.chat.id, progressMsg.message_id,
+              `✏️ *Editing...*\n\n${stage === "editing" ? "✏️" : "🚀"} ${detail}`,
+              { parse_mode: "Markdown" });
+          } catch { /* ignore */ }
+        };
+
+        const result = await editAndDeploySite(userId, text, onProgress);
+
+        if (result.success) {
+          log.info({ service: "handler", action: "auto-edit-success", userId, slug: result.slug });
+          try {
+            await ctx.api.editMessageText(ctx.chat.id, progressMsg.message_id,
+              `✅ *Site updated!*\n\n🌐 ${result.url}`, { parse_mode: "Markdown" });
+          } catch {
+            await ctx.reply(`✅ Site updated! ${result.url}`);
+          }
+        } else {
+          try {
+            await ctx.api.editMessageText(ctx.chat.id, progressMsg.message_id,
+              `❌ ${result.error}`);
+          } catch {
+            await ctx.reply(`❌ ${result.error}`);
+          }
+        }
+
+        addToHistory(chatId, "user", text);
+        addToHistory(chatId, "assistant", result.success ? `Site updated: ${result.url}` : `Edit failed: ${result.error}`);
+        return;
+      }
+
+      // Regular agent loop
       const conversationHistory = getHistory(chatId);
 
       const result = await runAgent({
