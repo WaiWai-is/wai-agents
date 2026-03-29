@@ -114,10 +114,9 @@ export function setupHandlers(bot: Bot) {
     const userName = ctx.from.first_name;
     const lang = detectLanguage(text);
 
-    // Use effective owner ID — groups share a site, private chats are per-user
-    const { getEffectiveOwnerId, isGroupChat, recordContribution } = await import("../agent/collab.js");
-    const ownerId = getEffectiveOwnerId(chatId, userId);
-    const isGroup = isGroupChat(chatId);
+    // Groups share a site (negative chatId), private chats are per-user
+    const ownerId = chatId < 0 ? String(chatId) : userId;
+    const isGroup = chatId < 0;
 
     log.info({ service: "handler", action: "text-received", userId, ownerId, isGroup, lang, length: text.length });
 
@@ -156,7 +155,6 @@ export function setupHandlers(bot: Bot) {
           // Remove the URL from description for slug generation
           const cleanDesc = text.replace(/https?:\/\/[^\s]+/g, "").replace(/[\w-]+\.(?:com|org|net|io|dev)/g, "").trim();
           const result = await buildSite(cleanDesc || `Inspired by ${analysis.title}`, undefined, "simple", onProgress, ownerId);
-          if (result.success && isGroup) recordContribution(String(chatId), userId, userName, "build", `Clone: ${analysis.title}`);
 
           if (result.success) {
             try {
@@ -196,7 +194,6 @@ export function setupHandlers(bot: Bot) {
         };
 
         const result = await editAndDeploySite(ownerId, text, onProgress);
-        if (result.success && isGroup) recordContribution(String(chatId), userId, userName, "edit", text.slice(0, 80));
 
         if (result.success) {
           log.info({ service: "handler", action: "auto-edit-success", userId, slug: result.slug });

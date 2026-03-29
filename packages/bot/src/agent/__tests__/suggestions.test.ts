@@ -10,8 +10,6 @@ import {
   storeSuggestions, getStoredSuggestions, clearSuggestions,
 } from "../suggestions.js";
 import type { QualityReport } from "../validator.js";
-import type { A11yReport } from "../a11y.js";
-import type { PerfReport } from "../perf.js";
 
 // Minimal mocks for report types
 const goodQuality: QualityReport = {
@@ -22,22 +20,6 @@ const goodQuality: QualityReport = {
 const basicQuality: QualityReport = {
   score: 65, passed: true, issues: [],
   stats: { htmlSize: 2000, hasTailwind: true, hasAlpineJs: false, hasLucideIcons: false, hasGoogleFonts: false, headingCount: 2, sectionCount: 2, hasForm: false, hasFooter: true, hasViewport: true, hasDarkMode: false, interactiveCount: 1 },
-};
-
-const badA11y: A11yReport = {
-  score: 40, passed: false, summary: "Bad",
-  issues: [
-    { rule: "img-alt", severity: "critical", message: "2 images missing alt text", count: 2 },
-    { rule: "focus-visible", severity: "minor", message: "No focus styles", count: 1 },
-  ],
-};
-
-const goodA11y: A11yReport = { score: 95, passed: true, summary: "Good", issues: [] };
-
-const basicPerf: PerfReport = {
-  score: 70, grade: "C",
-  metrics: { htmlSizeKb: 15, externalScripts: 3, externalStyles: 1, externalFonts: 1, inlineScriptKb: 2, inlineStyleKb: 1, imageCount: 5, totalExternalResources: 5, hasDeferScripts: true, hasAsyncScripts: false, hasLazyImages: false, estimatedLoadMs: 700 },
-  tips: ["Add lazy loading"],
 };
 
 describe("generateSuggestions", () => {
@@ -51,14 +33,10 @@ describe("generateSuggestions", () => {
     expect(suggestions.some((s) => s.id === "add-contact-form")).toBe(true);
   });
 
-  it("suggests animations when few interactive elements (in top candidates)", () => {
-    // With basicQuality (no dark mode, no form, few interactive), dark-mode and form have higher priority
-    // Animations (priority 70) may or may not be in top 3 depending on other suggestions
-    const allSuggestions = generateSuggestions("<html></html>", basicQuality);
-    // At minimum, we get useful suggestions
-    expect(allSuggestions.length).toBeGreaterThanOrEqual(2);
-    // Check that edit commands exist for all
-    for (const s of allSuggestions) {
+  it("returns useful suggestions with basic quality", () => {
+    const suggestions = generateSuggestions("<html></html>", basicQuality);
+    expect(suggestions.length).toBeGreaterThanOrEqual(2);
+    for (const s of suggestions) {
       expect(s.editCommand.length).toBeGreaterThan(0);
     }
   });
@@ -66,16 +44,6 @@ describe("generateSuggestions", () => {
   it("does NOT suggest dark mode when already present", () => {
     const suggestions = generateSuggestions("<html></html>", goodQuality);
     expect(suggestions.some((s) => s.id === "add-dark-mode")).toBe(false);
-  });
-
-  it("suggests a11y fix for critical issues", () => {
-    const suggestions = generateSuggestions("<html></html>", undefined, badA11y);
-    expect(suggestions.some((s) => s.id === "fix-a11y-critical")).toBe(true);
-  });
-
-  it("suggests lazy loading when missing", () => {
-    const suggestions = generateSuggestions("<html></html>", undefined, undefined, basicPerf);
-    expect(suggestions.some((s) => s.id === "add-lazy-loading")).toBe(true);
   });
 
   it("suggests FAQ when missing", () => {
@@ -89,12 +57,12 @@ describe("generateSuggestions", () => {
   });
 
   it("returns max 3 suggestions", () => {
-    const suggestions = generateSuggestions("<html></html>", basicQuality, badA11y, basicPerf);
+    const suggestions = generateSuggestions("<html></html>", basicQuality);
     expect(suggestions.length).toBeLessThanOrEqual(3);
   });
 
   it("sorts by priority (highest first)", () => {
-    const suggestions = generateSuggestions("<html></html>", basicQuality, badA11y);
+    const suggestions = generateSuggestions("<html></html>", basicQuality);
     for (let i = 1; i < suggestions.length; i++) {
       expect(suggestions[i].priority).toBeLessThanOrEqual(suggestions[i - 1].priority);
     }
@@ -107,10 +75,9 @@ describe("generateSuggestions", () => {
     }
   });
 
-  it("returns empty for perfect site", () => {
+  it("returns suggestions for perfect site", () => {
     const html = '<html><body><section id="faq"><h2>FAQ</h2></section><section id="pricing"><h2>Pricing</h2></section></body></html>';
-    const suggestions = generateSuggestions(html, goodQuality, goodA11y);
-    // May still have some suggestions, but fewer
+    const suggestions = generateSuggestions(html, goodQuality);
     expect(suggestions.length).toBeLessThanOrEqual(3);
   });
 });

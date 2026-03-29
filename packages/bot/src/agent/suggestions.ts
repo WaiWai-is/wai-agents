@@ -1,16 +1,12 @@
 /**
- * Smart Suggestions — proactive improvement recommendations after build.
+ * Smart Suggestions — proactive improvement tips after build.
  *
- * Analyzes generated sites using quality/a11y/perf scores and suggests
- * specific improvements the user can apply with one tap.
- *
- * Each suggestion is an inline button that triggers an /edit command.
+ * Analyzes generated HTML and quality report to suggest specific
+ * improvements the user can apply with one tap (inline keyboard buttons).
  */
 
 import { log } from "@wai/core";
 import type { QualityReport } from "./validator.js";
-import type { A11yReport } from "./a11y.js";
-import type { PerfReport } from "./perf.js";
 
 /** A single improvement suggestion. */
 export interface Suggestion {
@@ -19,18 +15,16 @@ export interface Suggestion {
   label: string;
   editCommand: string;
   priority: number; // higher = more important
-  category: "quality" | "a11y" | "perf" | "content" | "ux";
+  category: "quality" | "content" | "ux";
 }
 
 /**
- * Generate suggestions based on site analysis.
+ * Generate suggestions based on site HTML and quality report.
  * Returns top 3 most impactful suggestions.
  */
 export function generateSuggestions(
   html: string,
   quality?: QualityReport,
-  a11y?: A11yReport,
-  perf?: PerfReport,
 ): Suggestion[] {
   const all: Suggestion[] = [];
 
@@ -69,38 +63,7 @@ export function generateSuggestions(
     }
   }
 
-  // A11y-based suggestions
-  if (a11y) {
-    const criticalIssues = a11y.issues.filter((i) => i.severity === "critical");
-    if (criticalIssues.length > 0) {
-      all.push({
-        id: "fix-a11y-critical", emoji: "♿", label: "Fix accessibility",
-        editCommand: `Fix accessibility issues: ${criticalIssues.map((i) => i.message).join(". ")}. Add alt text to all images, aria-labels to buttons.`,
-        priority: 95, category: "a11y",
-      });
-    }
-
-    if (a11y.issues.some((i) => i.rule === "focus-visible")) {
-      all.push({
-        id: "add-focus-styles", emoji: "⌨️", label: "Add keyboard nav",
-        editCommand: "Add visible focus styles: focus:ring-2 focus:ring-primary-500 to all interactive elements (links, buttons, inputs).",
-        priority: 60, category: "a11y",
-      });
-    }
-  }
-
-  // Performance-based suggestions
-  if (perf) {
-    if (!perf.metrics.hasLazyImages && perf.metrics.imageCount > 2) {
-      all.push({
-        id: "add-lazy-loading", emoji: "🖼️", label: "Add lazy loading",
-        editCommand: 'Add loading="lazy" to all images below the fold for faster page load.',
-        priority: 65, category: "perf",
-      });
-    }
-  }
-
-  // Content-based suggestions (from HTML analysis)
+  // HTML content analysis
   if (!/<section[^>]*id\s*=\s*["']faq/i.test(html) && !/<h2[^>]*>FAQ/i.test(html)) {
     all.push({
       id: "add-faq", emoji: "❓", label: "Add FAQ section",

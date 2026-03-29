@@ -1048,13 +1048,11 @@ export async function buildSite(
   await onProgress?.("validated", `Quality: ${quality.score}/100 ${quality.passed ? "✅" : "⚠️"}`);
   log.info({ service: "site-builder", action: "quality-check", slug, score: quality.score, issues: quality.issues.length });
 
-  // Step 5: Inject SEO + analytics + form handler + state persistence
+  // Step 5: Inject SEO + analytics + form handler
   const { injectSeoTags } = await import("./seo.js");
-  const { injectStateManagement } = await import("./state.js");
   html = injectSeoTags(html, slug, description);
   html = injectAnalytics(html, slug);
   html = injectFormHandler(html, slug);
-  html = injectStateManagement(html, slug);
 
   // Step 6: Deploy
   await onProgress?.("deploying", `Deploying to ${slug}.wai.computer...`);

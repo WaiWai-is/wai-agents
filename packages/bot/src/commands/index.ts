@@ -487,21 +487,6 @@ Commands:
     }
   });
 
-  // /contributors — show who contributed to the group site
-  bot.command("contributors", async (ctx) => {
-    const chatId = String(ctx.chat.id);
-    log.info({ service: "command", action: "contributors", chatId });
-
-    const { formatContributors, isGroupChat } = await import("../agent/collab.js");
-
-    if (!isGroupChat(ctx.chat.id)) {
-      await ctx.reply("👥 /contributors works in group chats. Add me to a group to collaborate!");
-      return;
-    }
-
-    await ctx.reply(formatContributors(chatId), { parse_mode: "Markdown" });
-  });
-
   // /feedback
   bot.command("feedback", async (ctx) => {
     const feedback = ctx.match?.trim() ?? "";
